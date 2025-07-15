@@ -1,0 +1,178 @@
+[1mdiff --git a/backend/controllers/authController.js b/backend/controllers/authController.js[m
+[1mindex 7111e8d..b1dc22e 100644[m
+[1m--- a/backend/controllers/authController.js[m
+[1m+++ b/backend/controllers/authController.js[m
+[36m@@ -40,7 +40,7 @@[m [mexports.registerUser = asyncHandler(async (req, res) => {[m
+   if (!validator.isEmail(email)) throw createError("Invalid email", 400);[m
+   if (!validator.isStrongPassword(password, passwordValidationRules))[m
+     throw createError([m
+[31m-      "Password must include uppercase, number, and special character",[m
+[32m+[m[32m      "Password must include at least one number, uppercase character, and special character",[m
+       400[m
+     );[m
+ [m
+[36m@@ -128,10 +128,14 @@[m [mexports.requestPasswordReset = asyncHandler(async (req, res) => {[m
+     to: [email],[m
+     subject: "Reset your password",[m
+     html: `[m
+[31m-      <h2>Reset your password</h2>[m
+[31m-      <p>Click below to reset your password. This link expires in 15 minutes.</p>[m
+[31m-      <a href="${resetURL}">Reset Password</a>[m
+[31m-    `,[m
+[32m+[m[32m  <div style="max-width: 600px; margin: auto; padding: 40px; border: 1px solid #e0e0e0; border-radius: 8px; font-family: Arial, sans-serif; background-color: #ffffff;">[m
+[32m+[m[32m    <h2 style="color: #333333;">Reset your password</h2>[m
+[32m+[m[32m    <p style="font-size: 16px; color: #555555;">We received a request to reset your password. Click the button below to proceed. This link will expire in 15 minutes.</p>[m
+[32m+[m[32m    <a href="${resetURL}" style="display: inline-block; padding: 12px 20px; margin-top: 20px; background-color: #000000; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: bold;">Reset Password</a>[m
+[32m+[m[32m    <p style="font-size: 14px; color: #999999; margin-top: 30px;">If you didn’t request this, you can safely ignore this email.</p>[m
+[32m+[m[32m    <p style="font-size: 12px; color: #cccccc;">— The I NEED IT Team</p>[m
+[32m+[m[32m  </div>[m
+[32m+[m[32m`,[m
+   });[m
+ [m
+   res[m
+[1mdiff --git a/backend/controllers/listingController.js b/backend/controllers/listingController.js[m
+[1mindex 31af0d1..74fc012 100644[m
+[1m--- a/backend/controllers/listingController.js[m
+[1m+++ b/backend/controllers/listingController.js[m
+[36m@@ -13,7 +13,7 @@[m [mexports.getFeedListings = asyncHandler(async (req, res) => {[m
+       ...terms.map((term) => ({[m
+         $or: [[m
+           { title: term },[m
+[31m-          { brand: term },[m
+[32m+[m[32m          { designer: term },[m
+           { description: term },[m
+           { tags: term },[m
+           { category: term },[m
+[36m@@ -59,7 +59,7 @@[m [mexports.getListingById = asyncHandler(async (req, res) => {[m
+ });[m
+ [m
+ exports.getRandomListings = asyncHandler(async (req, res) => {[m
+[31m-  const count = 30;[m
+[32m+[m[32m  const count = 20;[m
+   const listings = await Listing.aggregate([[m
+     { $match: { isSold: false, isDeleted: false } },[m
+     { $sample: { size: count } },[m
+[1mdiff --git a/backend/controllers/userController.js b/backend/controllers/userController.js[m
+[1mindex 5def467..4b93140 100644[m
+[1m--- a/backend/controllers/userController.js[m
+[1m+++ b/backend/controllers/userController.js[m
+[36m@@ -9,43 +9,42 @@[m [mexports.getUserById = asyncHandler(async (req, res) => {[m
+ });[m
+ [m
+ exports.addFavorite = asyncHandler(async (req, res) => {[m
+[31m-  const user = await User.findById(req.params.id);[m
+[31m-  if (!user) throw createError("User not found", 404);[m
+[31m-[m
+[32m+[m[32m  const user = req.user;[m
+   const { listingId } = req.body;[m
+[32m+[m
+   if (!user.favorites.includes(listingId)) {[m
+     user.favorites.push(listingId);[m
+     await user.save();[m
+   }[m
+ [m
+[31m-  res[m
+[31m-    .status(200)[m
+[31m-    .json({ message: "Added to favorites", favorites: user.favorites });[m
+[32m+[m[32m  res.status(200).json({[m
+[32m+[m[32m    message: "Added to favorites",[m
+[32m+[m[32m    favorites: user.favorites,[m
+[32m+[m[32m  });[m
+ });[m
+ [m
+ exports.removeFavorite = asyncHandler(async (req, res) => {[m
+[31m-  const { id, listingId } = req.params;[m
+[31m-  const user = await User.findById(id);[m
+[31m-  if (!user) throw createError("User not found", 404);[m
+[32m+[m[32m  const user = req.user;[m
+[32m+[m[32m  const { listingId } = req.params;[m
+ [m
+   user.favorites = user.favorites.filter((fav) => fav.toString() !== listingId);[m
+   await user.save();[m
+ [m
+[31m-  res[m
+[31m-    .status(200)[m
+[31m-    .json({ message: "Removed from favorites", favorites: user.favorites });[m
+[32m+[m[32m  res.status(200).json({[m
+[32m+[m[32m    message: "Removed from favorites",[m
+[32m+[m[32m    favorites: user.favorites,[m
+[32m+[m[32m  });[m
+ });[m
+ [m
+ exports.getUserSizes = asyncHandler(async (req, res) => {[m
+[31m-  const user = await User.findById(req.params.id).select("settings.sizes");[m
+[32m+[m[32m  const user = await User.findById(req.user._id).select("settings.sizes");[m
+   if (!user) throw createError("User not found", 404);[m
+   res.status(200).json(user.settings.sizes || {});[m
+ });[m
+ [m
+ exports.updateUserSizes = asyncHandler(async (req, res) => {[m
+[32m+[m[32m  const user = req.user;[m
+   const { menswear, womenswear } = req.body;[m
+[31m-  const user = await User.findById(req.params.id);[m
+[31m-  if (!user) throw createError("User not found", 404);[m
+ [m
+   user.settings.sizes = {[m
+     menswear: menswear || {},[m
+[36m@@ -53,6 +52,7 @@[m [mexports.updateUserSizes = asyncHandler(async (req, res) => {[m
+   };[m
+ [m
+   await user.save();[m
+[32m+[m
+   res.status(200).json({[m
+     message: "Sizes updated successfully",[m
+     sizes: user.settings.sizes,[m
+[1mdiff --git a/backend/middleware/errorHandler.js b/backend/middleware/errorHandler.js[m
+[1mindex 3a15e0f..9f81f3b 100644[m
+[1m--- a/backend/middleware/errorHandler.js[m
+[1m+++ b/backend/middleware/errorHandler.js[m
+[36m@@ -1,6 +1,4 @@[m
+ const errorHandler = (err, req, res, next) => {[m
+[31m-  // console.error(err.stack);[m
+[31m-[m
+   const statusCode = err.statusCode || 500;[m
+   res.status(statusCode).json({[m
+     success: false,[m
+[1mdiff --git a/backend/models/Listing.js b/backend/models/Listing.js[m
+[1mindex b31987e..bb58cf0 100644[m
+[1m--- a/backend/models/Listing.js[m
+[1m+++ b/backend/models/Listing.js[m
+[36m@@ -1,14 +1,14 @@[m
+ const mongoose = require("mongoose");[m
+[32m+[m[32mconst categoryMap = require("../data/categoryMap");[m
+ [m
+ const ListingSchema = new mongoose.Schema([m
+   {[m
+     title: { type: String, required: true, trim: true },[m
+[31m-    brand: { type: String, required: true, trim: true },[m
+[32m+[m[32m    designer: { type: String, required: true, trim: true },[m
+     description: { type: String, maxlength: 1000 },[m
+[31m-    sellerDescription: { type: String, maxlength: 1000 },[m
+ [m
+     originalPrice: { type: Number },[m
+[31m-    price: { type: Number, required: true, min: 0 },[m
+[32m+[m[32m    price: { type: Number, required: true, min: 1, max: 199999 },[m
+     thumbnail: { type: String },[m
+     isFreeShipping: { type: Boolean, default: false },[m
+     shippingCost: { type: Number, default: 0 },[m
+[36m@@ -25,12 +25,26 @@[m [mconst ListingSchema = new mongoose.Schema([m
+         "Bottoms",[m
+         "Outerwear",[m
+         "Footwear",[m
+[31m-        "Tailoring",[m
+         "Accessories",[m
+         "Dresses",[m
+[32m+[m[32m        "Bags & Luggage",[m
+[32m+[m[32m        "Jewelry",[m
+       ],[m
+       required: true,[m
+     },[m
+[32m+[m[32m    subCategory: {[m
+[32m+[m[32m      type: String,[m
+[32m+[m[32m      validate: {[m
+[32m+[m[32m        validator: function (value) {[m
+[32m+[m[32m          const department = this.department;[m
+[32m+[m[32m          const category = this.category;[m
+[32m+[m[32m          const validOptions = categoryMap[department][category] || [];[m
+[32m+[m[32m          return validOptions.includes(value);[m
+[32m+

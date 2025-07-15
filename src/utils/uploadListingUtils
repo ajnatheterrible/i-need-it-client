@@ -1,0 +1,54 @@
+export const uploadListing = async (formData, token) => {
+  try {
+    const res = await fetch("/api/market/upload-listing", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        formData,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      return data.listing;
+    } else {
+      console.log("Error uploading listing", data);
+      return null;
+    }
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+};
+
+export const patchListing = async (formData, token, listingId) => {
+  try {
+    const res = await fetch("/api/market/patch-listing", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        formData,
+        listingId,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      return data.listing;
+    } else {
+      console.log("Error uploading listing", data);
+      return null;
+    }
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+};
