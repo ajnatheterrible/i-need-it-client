@@ -1,8 +1,11 @@
 import { Box, VStack, Text, Link as ChakraLink, Grid } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
-import Container from "./Container";
+
 import { Link as RouterLink } from "react-router-dom";
 import { forwardRef } from "react";
+import { useNavigate } from "react-router-dom";
+
+import Container from "./Container";
 
 const MotionBox = motion(Box);
 
@@ -27,6 +30,8 @@ const MenuDropdown = forwardRef(
   ) => {
     const isGrouped =
       items.length && typeof items[0] === "object" && items[0].heading;
+
+    const navigate = useNavigate();
 
     return (
       <AnimatePresence>
@@ -75,11 +80,18 @@ const MenuDropdown = forwardRef(
                           </Text>
                           {section.items.map((item, j) => (
                             <ChakraLink
-                              as={RouterLink}
-                              to="#"
+                              as="button"
                               fontSize="sm"
                               key={j}
-                              onClick={onClose}
+                              onClick={() => {
+                                onClose?.();
+                                {
+                                  item === designers &&
+                                    navigate(
+                                      `/shop?query=${encodeURIComponent(item)}`
+                                    );
+                                }
+                              }}
                             >
                               {item}
                             </ChakraLink>
@@ -104,11 +116,15 @@ const MenuDropdown = forwardRef(
                           >
                             {chunk.map((item, i) => (
                               <ChakraLink
-                                as={RouterLink}
-                                to="#"
+                                as="button"
                                 fontSize="sm"
                                 key={i}
-                                onClick={onClose}
+                                onClick={() => {
+                                  onClose?.();
+                                  navigate(
+                                    `/shop?query=${encodeURIComponent(item)}`
+                                  );
+                                }}
                               >
                                 {item}
                               </ChakraLink>
