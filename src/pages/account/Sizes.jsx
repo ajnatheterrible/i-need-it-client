@@ -5,7 +5,6 @@ import {
   Heading,
   Text,
   VStack,
-  HStack,
   Tabs,
   TabList,
   Tab,
@@ -15,112 +14,120 @@ import {
   SimpleGrid,
   Button,
 } from "@chakra-ui/react";
+import { useEffect, useState } from "react";
 import Container from "../../components/shared/Container";
 import Footer from "../../components/layout/Footer";
 import AccountSidebar from "../../components/sidebars/AccountSidebar";
+import useFetchSizes from "../../hooks/useFetchSizes";
+import useAuthStore from "../../store/authStore";
 
 const menswearSizes = {
-  Tops: ["XXS/40", "XS/42", "S/44-46", "M/48-50", "L/52-54", "XL/56", "XXL/58"],
-  Bottoms: [
-    "27",
-    "28",
-    "29",
-    "30",
-    "31",
-    "32",
-    "33",
-    "34",
-    "35",
-    "36",
-    "37",
-    "38",
-    "39",
-    "40",
-    "41",
-    "42",
-    "43",
-    "44",
-  ],
-  Outerwear: [
-    "XXS/40",
-    "XS/42",
-    "S/44-46",
-    "M/48-50",
-    "L/52-54",
-    "XL/56",
-    "XXL/58",
-  ],
-  Footwear: [
-    "5",
-    "5.5",
-    "6",
-    "6.5",
-    "7",
-    "7.5",
-    "8",
-    "8.5",
-    "9",
-    "9.5",
-    "10",
-    "10.5",
-    "11",
-    "11.5",
-    "12",
-    "12.5",
-    "13",
-    "14",
-    "15",
-  ],
-  Tailoring: [
-    "34S",
-    "34R",
-    "36S",
-    "36R",
-    "38S",
-    "38R",
-    "38L",
-    "40S",
-    "40R",
-    "40L",
-    "42S",
-    "42R",
-    "42L",
-    "44S",
-    "44R",
-    "44L",
-    "46S",
-    "46R",
-    "46L",
-    "48S",
-    "48R",
-    "48L",
-    "50S",
-    "50R",
-    "50L",
-    "52S",
-    "52L",
-    "54R",
-    "54L",
-    "62S",
-    "62R",
-  ],
-  Accessories: [
-    "OS",
-    "26",
-    "28",
-    "30",
-    "32",
-    "34",
-    "36",
-    "38",
-    "40",
-    "42",
-    "44",
-    "46",
-  ],
+  Tops: ["XS", "S", "M", "L", "XL"],
+  Bottoms: ["XS", "S", "M", "L", "XL"],
+  Outerwear: ["XS", "S", "M", "L", "XL"],
+  Tailoring: ["XS", "S", "M", "L", "XL"],
+  Footwear: ["40", "41", "42", "43", "44", "45"],
+};
+
+const womenswearSizes = {
+  Tops: ["XS", "S", "M", "L", "XL"],
+  Bottoms: ["XS", "S", "M", "L", "XL"],
+  Outerwear: ["XS", "S", "M", "L", "XL"],
+  Dresses: ["XS", "S", "M", "L", "XL"],
+  Footwear: ["37", "38", "39", "40", "41"],
 };
 
 export default function Sizes() {
+  useFetchSizes();
+
+  const fetchedSizes = useAuthStore((s) => s.fetchedData?.sizes);
+  const token = useAuthStore((s) => s.token);
+  const setFetchedData = useAuthStore((s) => s.setFetchedData);
+
+  const [selectedSizes, setSelectedSizes] = useState({
+    menswear: {},
+    womenswear: {},
+  });
+
+  const [hasSubmitted, setHasSubmitted] = useState(false);
+
+  useEffect(() => {
+    if (fetchedSizes) {
+      setSelectedSizes({
+        menswear: { ...fetchedSizes.menswear },
+        womenswear: { ...fetchedSizes.womenswear },
+      });
+    }
+  }, [fetchedSizes]);
+
+  const handleCheckboxChange = (section, category, size) => {
+    setSelectedSizes((prev) => {
+      const currentSizes = prev[section]?.[category] || [];
+      const isSelected = currentSizes.includes(size);
+
+      const updatedSizes = isSelected
+        ? currentSizes.filter((s) => s !== size)
+        : [...currentSizes, size];
+
+      return {
+        ...prev,
+        [section]: {
+          ...prev[section],
+          [category]: updatedSizes,
+        },
+      };
+    });
+  };
+
+  const handleSave = async () => {
+    try {
+      setHasSubmitted(true);
+
+      const res = await fetch(`/api/users/sizes`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(selectedSizes),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setFetchedData({ sizes: data.sizes });
+      } else {
+        console.error("Failed to save sizes:", data.message);
+      }
+    } catch (err) {
+      console.error("Save error:", err);
+    } finally {
+      setHasSubmitted(false);
+    }
+  };
+
+  const renderSizeGrid = (sectionKey, sizeMap) =>
+    Object.entries(sizeMap).map(([category, sizes]) => (
+      <Box key={category}>
+        <Text fontWeight="semibold" mb={2}>
+          {category}
+        </Text>
+        <SimpleGrid columns={[4, 6, 8]} spacing={3}>
+          {sizes.map((size) => (
+            <Checkbox
+              key={size}
+              isChecked={
+                selectedSizes?.[sectionKey]?.[category]?.includes(size) || false
+              }
+              onChange={() => handleCheckboxChange(sectionKey, category, size)}
+            >
+              {size}
+            </Checkbox>
+          ))}
+        </SimpleGrid>
+      </Box>
+    ));
+
   return (
     <>
       <Container>
@@ -166,27 +173,14 @@ export default function Sizes() {
                 <TabPanels>
                   <TabPanel px={0}>
                     <VStack align="start" spacing={8}>
-                      {Object.entries(menswearSizes).map(
-                        ([category, sizes]) => (
-                          <Box key={category}>
-                            <Text fontWeight="semibold" mb={2}>
-                              {category}
-                            </Text>
-                            <SimpleGrid columns={[4, 6, 8]} spacing={3}>
-                              {sizes.map((size) => (
-                                <Checkbox key={size}>{size}</Checkbox>
-                              ))}
-                            </SimpleGrid>
-                          </Box>
-                        )
-                      )}
+                      {renderSizeGrid("menswear", menswearSizes)}
                     </VStack>
                   </TabPanel>
 
-                  <TabPanel>
-                    <Text color="gray.500" fontSize="sm">
-                      Womenswear sizing coming soon.
-                    </Text>
+                  <TabPanel px={0}>
+                    <VStack align="start" spacing={8}>
+                      {renderSizeGrid("womenswear", womenswearSizes)}
+                    </VStack>
                   </TabPanel>
                 </TabPanels>
               </Tabs>
@@ -197,6 +191,8 @@ export default function Sizes() {
                 colorScheme="blackAlpha"
                 bg="black"
                 color="white"
+                onClick={handleSave}
+                isLoading={hasSubmitted}
               >
                 SAVE MY SIZES
               </Button>

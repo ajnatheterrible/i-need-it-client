@@ -22,20 +22,20 @@ import { ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
 import { useState, useEffect } from "react";
 import useAuthStore from "../../store/authStore";
 
-const SIZE_OPTIONS = {
+const sizeOptions = {
   menswear: {
-    Tops: ["XXS", "XS", "S", "M", "L", "XL", "XXL"],
-    Bottoms: ["XXS", "XS", "S", "M", "L", "XL", "XXL"],
-    Outerwear: ["XS", "S", "M", "L", "XL", "XXL"],
+    Tops: ["XS", "S", "M", "L", "XL"],
+    Bottoms: ["XS", "S", "M", "L", "XL"],
+    Outerwear: ["XS", "S", "M", "L", "XL"],
     Tailoring: ["XS", "S", "M", "L", "XL"],
-    Footwear: ["38", "39", "40", "41", "42", "43", "44", "45"],
+    Footwear: ["40", "41", "42", "43", "44", "45"],
   },
   womenswear: {
-    Tops: ["XXS", "XS", "S", "M", "L", "XL", "XXL"],
-    Bottoms: ["XXS", "XS", "S", "M", "L", "XL", "XXL"],
-    Outerwear: ["XS", "S", "M", "L", "XL", "XXL"],
-    Dresses: ["XXS", "XS", "S", "M", "L", "XL"],
-    Footwear: ["38", "39", "40", "41", "42", "43", "44", "45"],
+    Tops: ["XS", "S", "M", "L", "XL"],
+    Bottoms: ["XS", "S", "M", "L", "XL"],
+    Outerwear: ["XS", "S", "M", "L", "XL"],
+    Dresses: ["XS", "S", "M", "L", "XL"],
+    Footwear: ["37", "38", "39", "40", "41"],
   },
 };
 
@@ -111,7 +111,7 @@ export default function EditSizesModal({ isOpen, onClose }) {
   };
 
   const renderSection = (department) =>
-    Object.entries(SIZE_OPTIONS[department]).map(([category, options]) => (
+    Object.entries(sizeOptions[department]).map(([category, options]) => (
       <Box key={category} w="100%">
         <HStack
           justify="space-between"
@@ -194,7 +194,7 @@ export default function EditSizesModal({ isOpen, onClose }) {
             width="100%"
             mt={4}
             onClick={handleSave}
-            disabled={hasSubmitted}
+            isLoading={hasSubmitted}
           >
             SAVE MY SIZES
           </Button>
