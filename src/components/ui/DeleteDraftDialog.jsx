@@ -19,7 +19,7 @@ function DeleteDraftDialog({ onConfirm, isSubmitting, page }) {
     <>
       <Button
         onClick={onOpen}
-        isDisabled={isSubmitting}
+        isLoading={isSubmitting}
         {...(isDraftPage
           ? {
               w: "100%",

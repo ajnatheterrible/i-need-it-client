@@ -14,6 +14,7 @@ import {
   Grid,
   GridItem,
   Alert,
+  Switch,
   AlertIcon,
 } from "@chakra-ui/react";
 import { FaCamera } from "react-icons/fa";
@@ -209,6 +210,8 @@ export default function Sell() {
 
     try {
       setIsSubmitting(true);
+
+      const minDelay = new Promise((res) => setTimeout(res, 300));
 
       let listing = listingId
         ? await patchListing(formData, token, listingId)
@@ -742,7 +745,7 @@ export default function Sell() {
         </Box>
 
         <Box mb={16} w="50%">
-          <FormControl id="accept-offers" display="flex" alignItems="center">
+          <FormControl display="flex" alignItems="center">
             <FormLabel
               htmlFor="accept-offers"
               mb="0"
@@ -751,41 +754,14 @@ export default function Sell() {
             >
               Accept offers
             </FormLabel>
-            <Box ml="auto">
-              <input
-                id="accept-offers"
-                type="checkbox"
-                style={{ display: "none" }}
-                checked={acceptOffers || false}
-                onChange={(e) =>
-                  setAcceptOffers(e.target.checked ? true : false)
-                }
-              />
-              <Box
-                as="label"
-                htmlFor="accept-offers"
-                cursor="pointer"
-                display="inline-block"
-                w="42px"
-                h="24px"
-                bg={acceptOffers ? "gray.800" : "gray.300"}
-                borderRadius="full"
-                position="relative"
-                transition="background-color 0.2s"
-              >
-                <Box
-                  w="18px"
-                  h="18px"
-                  bg="white"
-                  borderRadius="full"
-                  position="absolute"
-                  top="3px"
-                  left={acceptOffers ? "20px" : "4px"}
-                  transition="left 0.2s"
-                  boxShadow="md"
-                />
-              </Box>
-            </Box>
+            <Switch
+              id="accept-offers"
+              isChecked={acceptOffers}
+              onChange={(e) => setAcceptOffers(e.target.checked)}
+              ml="auto"
+              size="md"
+              colorScheme="gray"
+            />
           </FormControl>
         </Box>
 

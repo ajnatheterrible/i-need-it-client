@@ -38,6 +38,7 @@ import ProtectedRoute from "./components/shared/ProtectedRoute";
 import CompleteSignup from "./pages/static/CompleteSignup";
 import ForgotPassword from "./pages/static/ForgotPassword";
 import DraftsSkeleton from "./components/skeletons/DraftsSkeleton";
+import ConfirmEmailChange from "./pages/static/ConfirmEmailChange";
 
 import posthog from "posthog-js";
 
@@ -94,6 +95,10 @@ export default function App() {
           <Route path="contact-us" element={<Contact />} />
           <Route path="designers" element={<Designers />} />
           <Route path="forgot-password" element={<ForgotPassword />} />
+          <Route
+            path="/confirm-email-change"
+            element={<ConfirmEmailChange />}
+          />
 
           <Route path="*" element={<NotFound />} />
         </Route>
