@@ -736,11 +736,21 @@ export default function Sell() {
                 />
               </Grid>
             </SimpleGrid>
-            {priceError && (
-              <FormErrorMessage fontWeight="bold" fontSize="xs">
-                {priceError}
-              </FormErrorMessage>
-            )}
+            <AnimatePresence mode="wait">
+              {priceError && (
+                <motion.div
+                  key={priceError}
+                  initial={{ opacity: 0, y: -3 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 3 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <FormErrorMessage fontWeight="bold" fontSize="xs">
+                    {priceError}
+                  </FormErrorMessage>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </FormControl>
         </Box>
 
@@ -778,18 +788,28 @@ export default function Sell() {
             Photos
           </Heading>
 
-          {hasSubmitted && !uploadedImageUrls.some(Boolean) && (
-            <Alert
-              status="error"
-              variant="left-accent"
-              borderRadius="md"
-              bg="red.50"
-              mb={4}
-            >
-              <AlertIcon />
-              <Text fontSize="sm">Please add at least one</Text>
-            </Alert>
-          )}
+          <AnimatePresence mode="wait">
+            {hasSubmitted && !uploadedImageUrls.some(Boolean) && (
+              <motion.div
+                key="photo-error"
+                initial={{ opacity: 0, y: -3 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 3 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Alert
+                  status="error"
+                  variant="left-accent"
+                  borderRadius="md"
+                  bg="red.50"
+                  mb={4}
+                >
+                  <AlertIcon />
+                  <Text fontSize="sm">Please add at least one</Text>
+                </Alert>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <Grid templateColumns="repeat(8, 1fr)" gap={4}>
             {[0, 1, 2, 3, 4].map((index) => {

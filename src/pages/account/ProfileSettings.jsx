@@ -502,7 +502,7 @@ export default function ProfileSettings() {
                       <FormLabel>Location</FormLabel>
                       <CustomSelect
                         id="location"
-                        placeholder="Select your region"
+                        placeholder={"Select your region"}
                         options={[
                           "United States",
                           "Canada",

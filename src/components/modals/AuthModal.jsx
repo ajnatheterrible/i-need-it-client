@@ -13,6 +13,7 @@ import {
   Text,
   Link,
 } from "@chakra-ui/react";
+import { AnimatePresence, motion } from "framer-motion";
 import { FcGoogle } from "react-icons/fc";
 import { FaApple } from "react-icons/fa";
 import { useState } from "react";
@@ -129,14 +130,24 @@ export default function AuthModal({
                   onFocus={() => setFocusedField("username")}
                   onBlur={() => setFocusedField(null)}
                 />
-                {focusedField === "username" && (
-                  <Text
-                    fontSize="xs"
-                    color={!isValidUsername ? "red.500" : "gray.500"}
-                  >
-                    3–30 characters, letters and numbers only
-                  </Text>
-                )}
+                <AnimatePresence mode="wait">
+                  {focusedField === "username" && (
+                    <motion.div
+                      key="username-helper"
+                      initial={{ opacity: 0, y: -3 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 3 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <Text
+                        fontSize="xs"
+                        color={!isValidUsername ? "red.500" : "gray.500"}
+                      >
+                        3–30 characters, letters and numbers only
+                      </Text>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </>
             )}
 
@@ -149,14 +160,24 @@ export default function AuthModal({
               onFocus={() => setFocusedField("email")}
               onBlur={() => setFocusedField(null)}
             />
-            {focusedField === "email" && (
-              <Text
-                fontSize="xs"
-                color={!isValidEmail ? "red.500" : "gray.500"}
-              >
-                Enter a valid email address
-              </Text>
-            )}
+            <AnimatePresence mode="wait">
+              {focusedField === "email" && (
+                <motion.div
+                  key="email-helper"
+                  initial={{ opacity: 0, y: -3 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 3 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Text
+                    fontSize="xs"
+                    color={!isValidEmail ? "red.500" : "gray.500"}
+                  >
+                    Enter a valid email address
+                  </Text>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <PasswordInput
               name="password"
@@ -172,6 +193,26 @@ export default function AuthModal({
               onBlur={() => setFocusedField(null)}
             />
 
+            <AnimatePresence mode="wait">
+              {focusedField === "password" && (
+                <motion.div
+                  key="password-helper"
+                  initial={{ opacity: 0, y: -3 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 3 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Text
+                    fontSize="xs"
+                    color={!isStrongPassword ? "red.500" : "gray.500"}
+                  >
+                    Minimum 6 characters, one uppercase, one number, and one
+                    symbol
+                  </Text>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {view === "login" && (
               <Text fontSize="sm" color="gray.500" textAlign="right">
                 <Link
@@ -185,20 +226,21 @@ export default function AuthModal({
               </Text>
             )}
 
-            {focusedField === "password" && (
-              <Text
-                fontSize="xs"
-                color={!isStrongPassword ? "red.500" : "gray.500"}
-              >
-                Minimum 6 characters, one uppercase, one number, and one symbol
-              </Text>
-            )}
-
-            {errorMessage && (
-              <Text fontSize="sm" color="red.500" textAlign="center">
-                {errorMessage}
-              </Text>
-            )}
+            <AnimatePresence mode="wait">
+              {errorMessage && (
+                <motion.div
+                  key={errorMessage}
+                  initial={{ opacity: 0, y: -3 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 3 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Text fontSize="sm" color="red.500" textAlign="center">
+                    {errorMessage}
+                  </Text>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <Button
               width="100%"

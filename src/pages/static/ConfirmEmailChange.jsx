@@ -70,16 +70,34 @@ export default function ConfirmEmailChange() {
       <MotionVStack
         spacing={6}
         textAlign="center"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, ease: "easeInOut" }}
+        initial={{ opacity: 0, y: -3 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 3 }}
+        transition={{ duration: 0.2 }}
       >
         <Icon as={IconComp} boxSize={16} color={iconColor} />
-        <Text fontSize="lg" fontWeight="semibold">
-          {message}
-        </Text>
 
-        {isSuccess && <Text>You may now log in with your new email</Text>}
+        <motion.div
+          initial={{ opacity: 0, y: -3 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 3 }}
+          transition={{ duration: 0.2 }}
+        >
+          <Text fontSize="lg" fontWeight="semibold">
+            {message}
+          </Text>
+        </motion.div>
+
+        {isSuccess && (
+          <motion.div
+            initial={{ opacity: 0, y: -3 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 3 }}
+            transition={{ duration: 0.2 }}
+          >
+            <Text>You may now log in with your new email</Text>
+          </motion.div>
+        )}
       </MotionVStack>
     );
   };
