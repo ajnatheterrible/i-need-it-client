@@ -421,6 +421,7 @@ export default function AddressModal({
               isChecked={formData.isDefaultShipping}
               onChange={handleChange}
               fontSize="xs"
+              colorScheme="gray"
             >
               <Text fontSize="xs">Make this my Default Return Address</Text>
             </Checkbox>
@@ -430,6 +431,7 @@ export default function AddressModal({
               isChecked={formData.isDefaultPurchase}
               onChange={handleChange}
               fontSize="xs"
+              colorScheme="gray"
             >
               <Text fontSize="xs">Make this my Default Purchase Address</Text>
             </Checkbox>

@@ -163,6 +163,7 @@ export default function FilterSidebar({
                     isChecked={(filters.department || []).includes(dept)}
                     onChange={() => handleCheckbox("department", dept)}
                     isDisabled={!query && mode === "search"}
+                    colorScheme="gray"
                   >
                     {dept}
                   </Checkbox>,
@@ -193,6 +194,7 @@ export default function FilterSidebar({
                       isChecked={(filters.category || []).includes(cat)}
                       onChange={() => handleCheckbox("category", cat)}
                       isDisabled={!query && mode === "search"}
+                      colorScheme="gray"
                     >
                       {cat}
                     </Checkbox>,
@@ -222,6 +224,7 @@ export default function FilterSidebar({
                     isChecked={(filters.size || []).includes(size)}
                     onChange={() => handleCheckbox("size", size)}
                     isDisabled={!query && mode === "search"}
+                    colorScheme="gray"
                   >
                     {size}
                   </Checkbox>,
@@ -251,6 +254,7 @@ export default function FilterSidebar({
                     isChecked={(filters.condition || []).includes(label)}
                     onChange={() => handleCheckbox("condition", label)}
                     isDisabled={!query && mode === "search"}
+                    colorScheme="gray"
                   >
                     {label}
                   </Checkbox>,
