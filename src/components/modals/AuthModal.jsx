@@ -112,7 +112,7 @@ export default function AuthModal({
       finalFocusRef={finalFocusRef}
     >
       <ModalOverlay bg="blackAlpha.800" backdropFilter="blur(4px)" />
-      <ModalContent>
+      <ModalContent borderRadius="none">
         <ModalHeader textAlign="center">
           {view === "login" ? "Log in" : "Create an account"}
         </ModalHeader>

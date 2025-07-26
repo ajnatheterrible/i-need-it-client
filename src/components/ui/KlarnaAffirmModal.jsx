@@ -109,7 +109,7 @@ const KlarnaAffirmModal = ({ isOpen, onClose, price }) => {
         scrollBehavior="inside"
       >
         <ModalOverlay />
-        <ModalContent borderRadius="md" overflow="hidden" px={0} py={0}>
+        <ModalContent borderRadius="none" overflow="hidden" px={0} py={0}>
           <ModalCloseButton
             top="16px"
             right="16px"
