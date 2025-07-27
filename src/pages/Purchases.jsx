@@ -2,121 +2,153 @@ import {
   Box,
   Grid,
   GridItem,
+  Heading,
   Text,
   VStack,
   HStack,
   Avatar,
-  Badge,
+  Flex,
   Button,
   Image,
   Link,
+  Spinner,
+  Divider,
 } from "@chakra-ui/react";
 import { Link as RouterLink } from "react-router-dom";
+import { motion } from "framer-motion";
+
 import Container from "../components/shared/Container";
 import Footer from "../components/layout/Footer";
-import AccountSidebar from "../components/sidebars/AccountSidebar"; // 🆕 import sidebar component
+import AccountSidebar from "../components/sidebars/AccountSidebar";
+
+import useAuthStore from "../store/authStore";
+import useFetchPurchases from "../hooks/useFetchPurchases";
+import formatFullDate from "../utils/formatFullDate";
 
 export default function Purchases() {
-  const purchases = [...Array(5)].map((_, i) => ({
-    id: i,
-    brand: "THE VIRIDI-ANNE",
-    title: "Leather mask hooded jacket",
-    price: "$1200.00",
-    size: "US 8 / EU 41-42-46",
-    date: "April 27, 2025",
-    seller: "soya.dg",
-    imageUrl: "/placeholder.jpg",
-    status: "Delivered",
-  }));
+  const { loading, error } = useFetchPurchases();
+
+  const purchases = useAuthStore((s) => s.fetchedData?.purchases);
 
   return (
     <>
       <Container>
         <Grid templateColumns="repeat(12, 1fr)" gap={6} py={10}>
-          <GridItem colSpan={2}>
+          <GridItem colSpan={2} as="nav">
             <AccountSidebar />
           </GridItem>
 
           <GridItem colSpan={10}>
-            <VStack align="start" spacing={6}>
-              <Text fontSize="4xl" fontWeight="bold">
-                Purchases
-              </Text>
-
-              {purchases.map((item) => (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.25 }}
+            >
+              {loading ? (
                 <Box
-                  key={item.id}
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  minH="60vh"
                   w="full"
-                  borderWidth="1px"
-                  borderRadius="md"
-                  p={4}
-                  bg="white"
                 >
-                  <Grid templateColumns="2fr 5fr 2fr 2fr" gap={4}>
-                    <Box position="relative">
-                      <Image
-                        src={item.imageUrl}
-                        alt={item.title}
-                        objectFit="cover"
-                        height="100px"
-                        borderRadius="md"
-                      />
-                      <Badge
-                        position="absolute"
-                        top="2"
-                        left="2"
-                        fontSize="0.6em"
-                        fontWeight="bold"
-                        colorScheme="blackAlpha"
-                      >
-                        {item.status.toUpperCase()}
-                      </Badge>
-                    </Box>
-
-                    <VStack align="start" spacing={1}>
-                      <Text fontWeight="bold" fontSize="sm">
-                        {item.brand}
-                      </Text>
-                      <Text fontSize="xs" color="gray.600">
-                        {item.title}
-                      </Text>
-                      <Text fontWeight="semibold" fontSize="sm">
-                        {item.price}
-                      </Text>
-                      <Text fontSize="xs" color="gray.500">
-                        {item.size}
-                      </Text>
-                    </VStack>
-
-                    <VStack align="start" spacing={1} fontSize="xs">
-                      <Text color="gray.500">Purchased on</Text>
-                      <Text>{item.date}</Text>
-                      <Text color="gray.500">Seller</Text>
-                      <HStack>
-                        <Avatar size="xs" name={item.seller} bg="gray.200" />
-                        <Link
-                          as={RouterLink}
-                          to="#"
-                          fontWeight="semibold"
-                          fontSize="xs"
-                        >
-                          {item.seller}
-                        </Link>
-                      </HStack>
-                    </VStack>
-
-                    <VStack spacing={2}>
-                      <Button size="sm" variant="outline">
-                        EDIT FEEDBACK
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        ORDER DETAILS
-                      </Button>
-                    </VStack>
-                  </Grid>
+                  <Spinner size="xl" thickness="4px" color="gray.300" />
                 </Box>
-              ))}
-            </VStack>
+              ) : (
+                <VStack align="start" spacing={0} w="full">
+                  <Heading size="lg" mb={8}>
+                    Purchases
+                  </Heading>
+
+                  {purchases?.map((item, i) => (
+                    <Box key={item._id} w="full">
+                      <Box py={6}>
+                        <Flex w="full" align="center" gap={6}>
+                          <Flex flex={2} gap={4} align="center">
+                            <Image
+                              src={item.thumbnail}
+                              alt={item.title}
+                              h="140px"
+                              w="120px"
+                              objectFit="cover"
+                              fallbackSrc="https://via.placeholder.com/140"
+                            />
+                            <VStack align="start" spacing={1}>
+                              <Text fontWeight="bold" fontSize="xs">
+                                {item.designer}
+                              </Text>
+                              <Text fontSize="xs" color="gray.600">
+                                {item.title}
+                              </Text>
+                              <Text fontWeight="semibold" fontSize="xs">
+                                ${item.price}
+                              </Text>
+                              <Text fontSize="xs" color="gray.500">
+                                {item.size}
+                              </Text>
+                            </VStack>
+                          </Flex>
+
+                          <VStack
+                            align="start"
+                            spacing={1}
+                            fontSize="xs"
+                            flex={1}
+                          >
+                            <Text fontWeight="semibold">Purchased on</Text>
+                            <Text color="gray.500">
+                              {item.createdAt
+                                ? formatFullDate(item.createdAt)
+                                : "—"}
+                            </Text>
+                          </VStack>
+
+                          <VStack
+                            align="start"
+                            spacing={1}
+                            fontSize="xs"
+                            flex={1}
+                          >
+                            <Text fontWeight="semibold">Seller</Text>
+                            <HStack>
+                              <Avatar
+                                size="xs"
+                                name={item.seller.username}
+                                bg="gray.200"
+                              />
+                              <Link as={RouterLink} to="#" fontSize="xs">
+                                {item.seller.username}
+                              </Link>
+                            </HStack>
+                          </VStack>
+
+                          <VStack spacing={2} flex={1}>
+                            <Button
+                              size="xs"
+                              variant="outline"
+                              borderRadius="none"
+                            >
+                              EDIT FEEDBACK
+                            </Button>
+                            <Button
+                              size="xs"
+                              variant="outline"
+                              borderRadius="none"
+                            >
+                              ORDER DETAILS
+                            </Button>
+                          </VStack>
+                        </Flex>
+                      </Box>
+
+                      {i !== purchases.length - 1 && (
+                        <Divider borderColor="gray.200" />
+                      )}
+                    </Box>
+                  ))}
+                </VStack>
+              )}
+            </motion.div>
           </GridItem>
         </Grid>
       </Container>

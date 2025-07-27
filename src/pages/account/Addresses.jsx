@@ -70,7 +70,7 @@ export default function Addresses() {
             <AccountSidebar />
           </GridItem>
 
-          <GridItem colSpan={10}>
+          <GridItem colSpan={8}>
             {loading ? (
               <Box
                 display="flex"
@@ -95,13 +95,13 @@ export default function Addresses() {
                     size="sm"
                     variant="outline"
                     onClick={onOpen}
+                    borderRadius="none"
                   >
                     + ADD NEW ADDRESS
                   </Button>
                 </HStack>
 
                 <VStack spacing={10} align="start" fontSize="sm" w="full">
-                  {/* Default Return Address */}
                   <Box w="100%">
                     <HStack spacing={3} mb={1} align="center">
                       <Heading size="sm">Default Return Address</Heading>
@@ -146,7 +146,6 @@ export default function Addresses() {
                     )}
                   </Box>
 
-                  {/* All Shipping Addresses */}
                   <Box w="100%">
                     <HStack spacing={3} mb={1} align="center">
                       <Heading size="sm">All Shipping Addresses</Heading>

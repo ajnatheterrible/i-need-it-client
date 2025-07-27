@@ -368,7 +368,7 @@ export default function ProfileSettings() {
                 display="flex"
                 alignItems="center"
                 justifyContent="center"
-                minH="80vh"
+                minH="60vh"
                 w="full"
               >
                 <Spinner size="xl" thickness="4px" color="gray.300" />

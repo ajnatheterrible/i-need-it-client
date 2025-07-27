@@ -141,7 +141,7 @@ export default function Sizes() {
             <AccountSidebar />
           </GridItem>
 
-          <GridItem colSpan={10}>
+          <GridItem colSpan={8}>
             {loading ? (
               <Box
                 display="flex"

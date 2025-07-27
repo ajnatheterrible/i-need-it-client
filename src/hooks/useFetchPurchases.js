@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import useAuthStore from "../store/authStore";
 
-export default function useFetchAddresses() {
+export default function useFetchPurchases() {
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
   const token = useAuthStore((s) => s.token);
   const setFetchedData = useAuthStore((s) => s.setFetchedData);
@@ -11,10 +11,10 @@ export default function useFetchAddresses() {
   useEffect(() => {
     if (!isLoggedIn) return;
 
-    const fetchAddresses = async () => {
+    const fetchPurchases = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`/api/users/addresses`, {
+        const res = await fetch(`/api/users/purchases`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -26,7 +26,9 @@ export default function useFetchAddresses() {
           throw new Error(data.message || "Failed to fetch addresses");
         }
 
-        setFetchedData({ addresses: data });
+        console.log("Fetched purchases: ", data);
+
+        setFetchedData({ purchases: data });
 
         setError(null);
       } catch (err) {
@@ -37,7 +39,7 @@ export default function useFetchAddresses() {
     };
 
     if (token) {
-      fetchAddresses();
+      fetchPurchases();
     }
   }, [token, setFetchedData]);
 
