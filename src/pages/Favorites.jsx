@@ -25,11 +25,9 @@ import getTimestamp from "../utils/getTimestamp";
 import { toggleFavorite } from "../utils/favoriteUtils";
 
 export default function Favorites() {
-  const [hasFetchedFavorites, setHasFetchedFavorites] = useState(false);
+  const { loading } = useFetchFavorites();
   const [sortOption, setSortOption] = useState("date");
   const toast = useToast();
-
-  useFetchFavorites(hasFetchedFavorites, setHasFetchedFavorites);
 
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
   const token = useAuthStore((s) => s.token);
@@ -53,7 +51,6 @@ export default function Favorites() {
 
     try {
       const data = await toggleFavorite(listingId, token, true);
-
       setFetchedData({ favorites: data.favorites });
     } catch (err) {
       toast({
@@ -97,8 +94,8 @@ export default function Favorites() {
             spacingX={6}
             mt={16}
           >
-            {!hasFetchedFavorites ? (
-              [...Array(10)].map((_, i) => <FavoritesSkeleton key={i} />)
+            {loading ? (
+              [...Array(3)].map((_, i) => <FavoritesSkeleton key={i} />)
             ) : sortedFavorites.length === 0 ? (
               <Box
                 gridColumn="1 / -1"

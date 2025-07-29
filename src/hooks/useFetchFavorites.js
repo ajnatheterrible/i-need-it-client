@@ -1,42 +1,44 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import useAuthStore from "../store/authStore";
 
-export default function useFetchFavorites(
-  hasFetchedFavorites = false,
-  setHasFetchedFavorites = () => {}
-) {
+export default function useFetchFavorites() {
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
   const token = useAuthStore((s) => s.token);
   const setFetchedData = useAuthStore((s) => s.setFetchedData);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!isLoggedIn || !token || hasFetchedFavorites === true) return;
+    if (!isLoggedIn || !token) return;
 
     const fetchFavorites = async () => {
       try {
+        setLoading(true);
+
         const res = await fetch(`/api/users/favorites`, {
-          method: "GET",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
         });
 
+        const data = await res.json();
+
         if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(errorData.message || "Failed to fetch favorites");
+          throw new Error(data.message || "Failed to fetch favorites");
         }
 
-        const favorites = await res.json();
-
-        setFetchedData({ favorites });
-
-        setHasFetchedFavorites(true);
+        setFetchedData({ favorites: data });
+        setError(null);
       } catch (err) {
-        console.error("❌ Error fetching favorites:", err);
+        setError(err.message || "Something went wrong");
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchFavorites();
-  }, [isLoggedIn, token, hasFetchedFavorites]);
+  }, [isLoggedIn, token, setFetchedData]);
+
+  return { loading, error };
 }

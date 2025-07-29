@@ -23,11 +23,9 @@ import getTimestamp from "../utils/getTimestamp";
 import { toggleFavorite } from "../utils/favoriteUtils";
 
 export default function UserFavorites() {
-  const [hasFetchedFavorites, setHasFetchedFavorites] = useState(false);
+  const { loading } = useFetchFavorites();
   const [sortOption, setSortOption] = useState("default");
   const toast = useToast();
-
-  useFetchFavorites(hasFetchedFavorites, setHasFetchedFavorites);
 
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
   const token = useAuthStore((s) => s.token);
@@ -51,7 +49,6 @@ export default function UserFavorites() {
 
     try {
       const data = await toggleFavorite(listingId, token, true);
-
       setFetchedData({ favorites: data.favorites });
     } catch (err) {
       toast({
@@ -87,88 +84,90 @@ export default function UserFavorites() {
       </Box>
 
       <Box mt={3}>
-        {sortedFavorites.length === 0 ? (
+        {loading ? (
+          <Grid templateColumns="repeat(5, 1fr)" gap={6}>
+            {[...Array(3)].map((_, i) => (
+              <FavoritesSkeleton key={i} />
+            ))}
+          </Grid>
+        ) : sortedFavorites.length === 0 ? (
           <Text fontSize="sm" textAlign="center" color="gray.500" mt={10}>
             You haven’t favorited anything yet
           </Text>
         ) : (
           <Grid templateColumns="repeat(5, 1fr)" gap={6}>
-            {!hasFetchedFavorites ? (
-              <FavoritesSkeleton />
-            ) : (
-              sortedFavorites.map((item) => (
-                <Box key={item._id} overflow="hidden">
-                  <Box
-                    as={RouterLink}
-                    to={`/listing/${item._id}`}
-                    _hover={{ textDecoration: "none" }}
-                  >
-                    <Box position="relative" height="200px">
-                      <Image
-                        src={item.thumbnail}
-                        alt={item.title}
-                        height="100%"
-                        width="100%"
-                        objectFit="cover"
-                      />
-                      {item.isFreeShipping && (
-                        <Badge
-                          position="absolute"
-                          top="16px"
-                          left="8px"
-                          bg="#DCEF31"
-                          color="black"
-                          fontWeight="bold"
-                          fontSize="0.7em"
-                          px={2}
-                          py={1}
-                          borderRadius="sm"
-                        >
-                          FREE SHIPPING
-                        </Badge>
-                      )}
-                    </Box>
-                    <Box p={3} pt={3} pb={0}>
-                      <Text fontSize="xs" color="gray.500">
-                        {getTimestamp(item.createdAt)}
-                      </Text>
-                      <Box
-                        borderBottom="1px solid"
-                        borderColor="gray.200"
-                        my={2}
-                      />
-                    </Box>
+            {sortedFavorites.map((item) => (
+              <Box key={item._id} overflow="hidden">
+                <Box
+                  as={RouterLink}
+                  to={`/listing/${item._id}`}
+                  _hover={{ textDecoration: "none" }}
+                >
+                  <Box position="relative" height="200px">
+                    <Image
+                      src={item.thumbnail}
+                      alt={item.title}
+                      height="100%"
+                      width="100%"
+                      objectFit="cover"
+                    />
+                    {item.isFreeShipping && (
+                      <Badge
+                        position="absolute"
+                        top="16px"
+                        left="8px"
+                        bg="#DCEF31"
+                        color="black"
+                        fontWeight="bold"
+                        fontSize="0.7em"
+                        px={2}
+                        py={1}
+                        borderRadius="sm"
+                      >
+                        FREE SHIPPING
+                      </Badge>
+                    )}
                   </Box>
-
-                  <Box px={3} pb={3}>
-                    <HStack justify="space-between" mt={1}>
-                      <Text fontWeight="bold" fontSize="sm" noOfLines={1}>
-                        {item.designer}
-                      </Text>
-                      <Text fontSize="xs" color="gray.600">
-                        {item.size}
-                      </Text>
-                    </HStack>
-                    <Text fontSize="xs" color="gray.600" noOfLines={1}>
-                      {item.title}
+                  <Box p={3} pt={3} pb={0}>
+                    <Text fontSize="xs" color="gray.500">
+                      {getTimestamp(item.createdAt)}
                     </Text>
-
-                    <HStack justify="space-between" mt={4}>
-                      <Text fontSize="sm" fontWeight="bold">
-                        ${item?.price?.toLocaleString()}
-                      </Text>
-
-                      <IconButton
-                        size="sm"
-                        icon={<FaHeart color="black" />}
-                        aria-label="Unfavorite"
-                        onClick={() => handleUnfavorite(item._id)}
-                      />
-                    </HStack>
+                    <Box
+                      borderBottom="1px solid"
+                      borderColor="gray.200"
+                      my={2}
+                    />
                   </Box>
                 </Box>
-              ))
-            )}
+
+                <Box px={3} pb={3}>
+                  <HStack justify="space-between" mt={1}>
+                    <Text fontWeight="bold" fontSize="sm" noOfLines={1}>
+                      {item.designer}
+                    </Text>
+                    <Text fontSize="xs" color="gray.600">
+                      {item.size}
+                    </Text>
+                  </HStack>
+                  <Text fontSize="xs" color="gray.600" noOfLines={1}>
+                    {item.title}
+                  </Text>
+
+                  <HStack justify="space-between" mt={4}>
+                    <Text fontSize="sm" fontWeight="bold">
+                      ${item?.price?.toLocaleString()}
+                    </Text>
+
+                    <IconButton
+                      size="sm"
+                      icon={<FaHeart color="black" />}
+                      aria-label="Unfavorite"
+                      onClick={() => handleUnfavorite(item._id)}
+                    />
+                  </HStack>
+                </Box>
+              </Box>
+            ))}
           </Grid>
         )}
       </Box>
