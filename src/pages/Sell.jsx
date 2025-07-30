@@ -17,13 +17,15 @@ import {
   Switch,
   AlertIcon,
 } from "@chakra-ui/react";
+import { useDisclosure } from "@chakra-ui/react";
 import { FaCamera } from "react-icons/fa";
 import { PuffLoader } from "react-spinners";
 import { AnimatePresence, motion } from "framer-motion";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import useAuthStore from "../store/authStore";
+import useFetchAddresses from "../hooks/useFetchAddresses";
 
 import Container from "../components/shared/Container";
 import TagInput from "../components/ui/tagInput";
@@ -31,6 +33,8 @@ import CustomSelect from "../components/ui/CustomSelect";
 import GroupedSelect from "../components/ui/GroupedSelect";
 import ShippingSection from "../components/ui/ShippingSection";
 import DeleteDraftDialog from "../components/ui/DeleteDraftDialog";
+import AddressSelectModal from "../components/modals/AddressSelectModal";
+import AddressModal from "../components/modals/AddressModal";
 
 import designers from "../data/designers";
 import categoryMap from "../data/categoryMap";
@@ -50,12 +54,23 @@ import { uploadListing, patchListing } from "../utils/uploadListingUtils";
 export default function Sell() {
   const navigate = useNavigate();
   const token = useAuthStore((s) => s.token);
+  const { loading: addressesLoading, error: addressesError } =
+    useFetchAddresses();
+  const addresses = useAuthStore((s) => s.fetchedData?.addresses);
+  const setFetchedData = useAuthStore((s) => s.setFetchedData);
 
   const { draftId, editId } = useParams();
   const listingId = draftId || editId;
 
   const inputRef = useRef(null);
   const didScrollOnValidation = useRef(false);
+
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: addIsOpen,
+    onOpen: addOnOpen,
+    onClose: addOnClose,
+  } = useDisclosure();
 
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -68,8 +83,9 @@ export default function Sell() {
   const [acceptOffers, setAcceptOffers] = useState(true);
   const [selectedColor, setSelectedColor] = useState(null);
   const [selectedCondition, setSelectedCondition] = useState("");
-  const [selectedRegions, setSelectedRegions] = useState([]);
+  const [selectedRegions, setSelectedRegions] = useState(["United States"]);
   const [shippingCosts, setShippingCosts] = useState({});
+  const [selectedAddress, setSelectedAddress] = useState(null);
   const [tags, setTags] = useState([]);
 
   const [showDesignerDropdown, setShowDesignerDropdown] = useState(false);
@@ -134,32 +150,30 @@ export default function Sell() {
     setPriceError(error);
   };
 
-  const toggleRegion = (region) => {
-    if (selectedRegions.includes(region)) {
-      setSelectedRegions((prev) => prev.filter((r) => r !== region));
-      setShippingCosts((prev) => {
-        const updated = { ...prev };
-        delete updated[region];
-        return updated;
-      });
-    } else {
-      setSelectedRegions((prev) => [...prev, region]);
-    }
-  };
+  const toggleRegion = useCallback((region) => {
+    setSelectedRegions((prev) => {
+      const alreadyIncluded = prev.includes(region);
+      const next = alreadyIncluded
+        ? prev.filter((r) => r !== region)
+        : [...prev, region];
+      return next;
+    });
 
-  const handleShippingCostChange = (region, value) => {
+    setShippingCosts((prev) => {
+      const updated = { ...prev };
+      if (updated.hasOwnProperty(region)) {
+        delete updated[region];
+      }
+      return updated;
+    });
+  }, []);
+
+  const handleShippingCostChange = useCallback((region, value) => {
     setShippingCosts((prev) => ({
       ...prev,
       [region]: value,
     }));
-  };
-
-  const address = {
-    name: "Joey Pereira",
-    street: "2445 NW 158th St",
-    cityStateZip: "Opa Locka, FL 33054",
-    country: "United States",
-  };
+  }, []);
 
   const handleSubmit = async () => {
     setHasSubmitted(true);
@@ -175,6 +189,8 @@ export default function Sell() {
       selectedCondition,
       priceInput,
       countryOfOrigin,
+      selectedAddress,
+      selectedRegions,
     ];
 
     const hasMissingFields = requiredFields.some(
@@ -206,6 +222,12 @@ export default function Sell() {
       countryOfOrigin,
       tags,
       uploadedImageUrls: uploadedImageUrls.filter(Boolean),
+      shippingFrom: selectedAddress,
+      shippingRegions: selectedRegions?.map((region) => ({
+        region,
+        cost: Number(shippingCosts[region]) || 0,
+        enabled: true,
+      })),
     };
 
     try {
@@ -244,6 +266,12 @@ export default function Sell() {
       countryOfOrigin,
       tags,
       uploadedImageUrls: uploadedImageUrls.filter(Boolean),
+      shippingFrom: selectedAddress,
+      shippingRegions: selectedRegions?.map((region) => ({
+        region,
+        cost: Number(shippingCosts[region]) || 0,
+        enabled: true,
+      })),
       isDraft: true,
     };
 
@@ -298,6 +326,18 @@ export default function Sell() {
       data.images?.length
         ? [...data.images, null, null, null, null, null].slice(0, 5)
         : [null, null, null, null, null]
+    );
+    setSelectedAddress(data.shippingFrom ?? null);
+    setSelectedRegions(
+      data.shippingRegions?.filter((r) => r.enabled).map((r) => r.region) ?? [
+        "United States",
+      ]
+    );
+    setShippingCosts(
+      data.shippingRegions?.reduce((acc, curr) => {
+        acc[curr.region] = curr.cost;
+        return acc;
+      }, {}) ?? {}
     );
   };
 
@@ -383,6 +423,15 @@ export default function Sell() {
       alert("Something went wrong. Please try again.");
     }
   };
+
+  useEffect(() => {
+    if (!addresses) return;
+
+    if (addresses.length && !selectedAddress) {
+      const defaultAddress = addresses.find((a) => a.isDefaultShipping);
+      setSelectedAddress(defaultAddress ?? addresses[0]);
+    }
+  }, [addresses]);
 
   return (
     <Container>
@@ -775,13 +824,18 @@ export default function Sell() {
           </FormControl>
         </Box>
 
-        <ShippingSection
-          address={address}
-          selectedRegions={selectedRegions}
-          shippingCosts={shippingCosts}
-          toggleRegion={toggleRegion}
-          handleShippingCostChange={handleShippingCostChange}
-        />
+        {
+          <ShippingSection
+            selectedAddress={selectedAddress}
+            selectedRegions={selectedRegions}
+            shippingCosts={shippingCosts}
+            toggleRegion={toggleRegion}
+            handleShippingCostChange={handleShippingCostChange}
+            onEditAddress={addresses?.length > 0 ? onOpen : undefined}
+            onAddAddress={addresses?.length === 0 ? addOnOpen : undefined}
+            hasSubmitted={hasSubmitted}
+          />
+        }
 
         <Box mb={16}>
           <Heading fontSize="20px" fontWeight="bold" mb={4}>
@@ -831,7 +885,7 @@ export default function Sell() {
                       h="100%"
                       maxHeight="500px"
                       bg="gray.100"
-                      borderRadius="md"
+                      borderRadius="none"
                       border="1px dashed gray"
                       display="flex"
                       alignItems="center"
@@ -978,6 +1032,15 @@ export default function Sell() {
           <PuffLoader size={60} color="#333" />
         </Box>
       )}
+
+      <AddressSelectModal
+        isOpen={isOpen}
+        onClose={onClose}
+        addresses={addresses}
+        onSelect={setSelectedAddress}
+      />
+
+      <AddressModal isOpen={addIsOpen} onClose={addOnClose} />
     </Container>
   );
 }

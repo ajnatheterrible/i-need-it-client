@@ -8,28 +8,29 @@ import {
   Grid,
   GridItem,
   Input,
-  FormControl,
-  FormLabel,
   Divider,
   Icon,
 } from "@chakra-ui/react";
 import { ChevronRightIcon } from "@chakra-ui/icons";
 
 const shippingRegions = [
-  { label: "Canada", value: "canada" },
-  { label: "United Kingdom", value: "uk" },
-  { label: "Europe", value: "europe" },
-  { label: "Asia", value: "asia" },
-  { label: "Australia / NZ", value: "anz" },
-  { label: "Other", value: "other" },
+  { label: "Canada", value: "Canada" },
+  { label: "United Kingdom", value: "United Kingdom" },
+  { label: "Europe", value: "Europe" },
+  { label: "Asia", value: "Asia" },
+  { label: "Australia / NZ", value: "Australia / NZ" },
+  { label: "Other", value: "Other" },
 ];
 
 export default function ShippingSection({
-  address,
+  selectedAddress,
   selectedRegions,
   shippingCosts,
   toggleRegion,
   handleShippingCostChange,
+  onEditAddress,
+  onAddAddress,
+  hasSubmitted,
 }) {
   return (
     <Box mb={16}>
@@ -42,19 +43,57 @@ export default function ShippingSection({
           item from
         </Text>
 
-        <HStack justifyContent="space-between" align="center" mb={8}>
-          <Box>
-            <Text fontSize="sm">{address.name}</Text>
-            <Text fontSize="sm">{address.street}</Text>
-            <Text fontSize="xs" color="gray.500">
-              {address.cityStateZip}
-            </Text>
-            <Text fontSize="xs" color="gray.500">
-              {address.country}
-            </Text>
-          </Box>
-          <Icon as={ChevronRightIcon} boxSize={5} />
-        </HStack>
+        {selectedAddress ? (
+          <HStack
+            justifyContent="space-between"
+            align="center"
+            mb={8}
+            _hover={{ cursor: "pointer" }}
+            onClick={onEditAddress}
+          >
+            <Box>
+              <Text fontSize="sm" fontWeight="semibold">
+                {selectedAddress?.fullName}
+              </Text>
+              <Text fontSize="sm">{selectedAddress?.line1}</Text>
+              {selectedAddress?.line2 && (
+                <Text fontSize="sm">{selectedAddress.line2}</Text>
+              )}
+              <Text fontSize="xs" color="gray.500">
+                {selectedAddress?.city}, {selectedAddress?.state}{" "}
+                {selectedAddress?.zip}
+              </Text>
+              <Text fontSize="xs" color="gray.500">
+                {selectedAddress?.country}
+              </Text>
+            </Box>
+            <Icon as={ChevronRightIcon} boxSize={5} />
+          </HStack>
+        ) : (
+          <HStack
+            justifyContent="space-between"
+            align="center"
+            mb={8}
+            _hover={{ cursor: "pointer" }}
+            onClick={onAddAddress}
+          >
+            <Box mx="auto">
+              <Text
+                fontSize="sm"
+                color={hasSubmitted ? "red.500" : "gray.300"}
+                fontWeight={hasSubmitted && "semibold"}
+              >
+                You haven't added any addresses yet. Add a default return
+                address.
+              </Text>
+            </Box>
+            <Icon
+              as={ChevronRightIcon}
+              color={hasSubmitted && "red.500"}
+              boxSize={5}
+            />
+          </HStack>
+        )}
 
         <Divider />
       </Box>
@@ -97,7 +136,7 @@ export default function ShippingSection({
                   )}
 
                   <Switch
-                    isChecked={selectedRegions.includes(region.value)}
+                    isChecked={selectedRegions?.includes(region.value)}
                     onChange={() => toggleRegion(region.value)}
                     size="md"
                     colorScheme="blackAlpha"
