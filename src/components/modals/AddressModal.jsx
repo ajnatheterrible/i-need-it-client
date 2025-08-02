@@ -11,6 +11,7 @@ import {
   FormLabel,
   FormErrorMessage,
   Grid,
+  Icon,
   Box,
   GridItem,
   Checkbox,
@@ -35,6 +36,8 @@ export default function AddressModal({
   existingAddress = null,
   onDelete,
   isDeleting,
+  errorMessage,
+  setErrorMessage,
 }) {
   const [formData, setFormData] = useState(
     () =>
@@ -53,7 +56,6 @@ export default function AddressModal({
   );
   const [touched, setTouched] = useState({});
   const [errors, setErrors] = useState({});
-  const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [countryInput, setCountryInput] = useState("");
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
@@ -184,13 +186,20 @@ export default function AddressModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="xl" isCentered>
       <ModalOverlay bg="blackAlpha.700" />
-      <ModalContent borderRadius="none">
+      <ModalContent
+        borderRadius="none"
+        maxW="600px"
+        maxH="90vh"
+        overflow="hidden"
+        pt={4}
+        pb={errorMessage ? 8 : 2}
+      >
         <ModalHeader fontWeight="bold" fontSize="xl" textAlign="center">
           {mode === "edit" ? "Edit address" : "Add address"}
         </ModalHeader>
         <ModalCloseButton />
-        <ModalBody pb={6}>
-          <FormControl mb={4} isInvalid={touched.fullName && errors.fullName}>
+        <ModalBody pb={4} overflowY="auto" maxH="calc(90vh - 160px)" pr={4}>
+          <FormControl mb={6} isInvalid={touched.fullName && errors.fullName}>
             <FormLabel fontSize="xs" fontWeight="semibold">
               Legal Name
             </FormLabel>
@@ -311,7 +320,7 @@ export default function AddressModal({
                   onChange={(e) => {
                     setCountryInput(e.target.value);
                     setShowCountryDropdown(true);
-                    setActiveIndex(0); // reset index on input change
+                    setActiveIndex(0);
                   }}
                   onFocus={() => setShowCountryDropdown(true)}
                   onBlur={() => {
@@ -415,7 +424,7 @@ export default function AddressModal({
             </GridItem>
           </Grid>
 
-          <VStack mt={8} spacing={4} align="start">
+          <VStack mt={10} spacing={4} align="start">
             <Checkbox
               name="isDefaultShipping"
               isChecked={formData.isDefaultShipping}
@@ -458,8 +467,12 @@ export default function AddressModal({
               mt={1}
               isLoading={isDeleting}
               onClick={async () => {
-                await onDelete?.(existingAddress._id);
-                onClose();
+                try {
+                  await onDelete(existingAddress._id);
+                  onClose();
+                } catch (err) {
+                  setErrorMessage(err.message);
+                }
               }}
               colorScheme="red"
               variant="ghost"
@@ -472,11 +485,33 @@ export default function AddressModal({
             </Button>
           )}
         </ModalFooter>
-        {errorMessage && (
-          <Text mt={2} fontSize="sm" color="red.500" textAlign="center">
-            {errorMessage}
-          </Text>
-        )}
+        <AnimatePresence mode="wait">
+          {errorMessage && (
+            <motion.div
+              key={errorMessage}
+              initial={{ opacity: 0, y: -3 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 3 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Box
+                bg="red.50"
+                px={4}
+                py={2}
+                borderRadius="md"
+                border="1px solid"
+                borderColor="red.200"
+              >
+                <HStack justify="center" spacing={2}>
+                  <Icon as={WarningTwoIcon} color="red.500" boxSize={4} />
+                  <Text fontSize="sm" color="red.500" fontWeight="semibold">
+                    {errorMessage}
+                  </Text>
+                </HStack>
+              </Box>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </ModalContent>
     </Modal>
   );

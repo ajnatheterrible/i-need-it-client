@@ -109,6 +109,7 @@ export default function Sell() {
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [missingItemName, setMissingItemName] = useState(false);
   const [isDraftEdit, setIsDraftEdit] = useState(false);
+  const [hydrating, setHydrating] = useState(false);
 
   const availableSubcategories =
     selectedDepartment && selectedCategory
@@ -223,11 +224,13 @@ export default function Sell() {
       tags,
       uploadedImageUrls: uploadedImageUrls.filter(Boolean),
       shippingFrom: selectedAddress,
-      shippingRegions: selectedRegions?.map((region) => ({
-        region,
-        cost: Number(shippingCosts[region]) || 0,
-        enabled: true,
-      })),
+      shippingRegions: [...new Set(["United States", ...selectedRegions])].map(
+        (region) => ({
+          region,
+          cost: Number(shippingCosts[region]) || 0,
+          enabled: true,
+        })
+      ),
     };
 
     try {
@@ -267,11 +270,13 @@ export default function Sell() {
       tags,
       uploadedImageUrls: uploadedImageUrls.filter(Boolean),
       shippingFrom: selectedAddress,
-      shippingRegions: selectedRegions?.map((region) => ({
-        region,
-        cost: Number(shippingCosts[region]) || 0,
-        enabled: true,
-      })),
+      shippingRegions: [...new Set(["United States", ...selectedRegions])].map(
+        (region) => ({
+          region,
+          cost: Number(shippingCosts[region]) || 0,
+          enabled: true,
+        })
+      ),
       isDraft: true,
     };
 
@@ -327,7 +332,6 @@ export default function Sell() {
         ? [...data.images, null, null, null, null, null].slice(0, 5)
         : [null, null, null, null, null]
     );
-    setSelectedAddress(data.shippingFrom ?? null);
     setSelectedRegions(
       data.shippingRegions?.filter((r) => r.enabled).map((r) => r.region) ?? [
         "United States",
@@ -339,12 +343,25 @@ export default function Sell() {
         return acc;
       }, {}) ?? {}
     );
+
+    const realAddress = addresses.find(
+      (addr) =>
+        addr.fullName === data.shippingFrom.fullName &&
+        addr.line1 === data.shippingFrom.line1 &&
+        addr.city === data.shippingFrom.city &&
+        addr.state === data.shippingFrom.state &&
+        addr.zip === data.shippingFrom.zip
+    );
+
+    setSelectedAddress(realAddress ?? null);
   };
 
   useEffect(() => {
     if (!draftId) return;
 
     const fetchDraft = async () => {
+      setHydrating(true);
+
       try {
         const res = await fetch(`/api/listings/${draftId}`, {
           method: "GET",
@@ -360,6 +377,8 @@ export default function Sell() {
         }
       } catch (err) {
         console.error("Error fetching draft:", err);
+      } finally {
+        setHydrating(false);
       }
 
       setIsDraftEdit(true);
@@ -372,6 +391,8 @@ export default function Sell() {
     if (!editId) return;
 
     const fetchListing = async () => {
+      setHydrating(true);
+
       try {
         const res = await fetch(`/api/listings/${editId}`, {
           method: "GET",
@@ -387,9 +408,9 @@ export default function Sell() {
         }
       } catch (err) {
         console.error("Error fetching draft:", err);
+      } finally {
+        setHydrating(false);
       }
-
-      setIsListingEdit(true);
     };
 
     fetchListing();
@@ -1016,7 +1037,7 @@ export default function Sell() {
         </Box>
       </Box>
 
-      {isSubmitting && (
+      {(isSubmitting || hydrating) && (
         <Box
           position="fixed"
           top={0}

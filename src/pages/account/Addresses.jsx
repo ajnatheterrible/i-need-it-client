@@ -31,6 +31,7 @@ import { useState } from "react";
 export default function Addresses() {
   const [editTarget, setEditTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(null);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { loading, error } = useFetchAddresses();
@@ -40,6 +41,21 @@ export default function Addresses() {
   const setFetchedData = useAuthStore((s) => s.setFetchedData);
 
   const handleDelete = async (id) => {
+    const target = addresses.find((a) => a._id === id);
+
+    const onlyOneLeft = addresses.length === 1;
+    const isDefault = target?.isDefaultShipping || target?.isDefaultPurchase;
+
+    if (onlyOneLeft) {
+      throw new Error("You must have at least one saved address");
+    }
+
+    if (isDefault) {
+      throw new Error(
+        "You must set another address as default before deleting this one"
+      );
+    }
+
     try {
       setIsDeleting(true);
 
@@ -57,6 +73,7 @@ export default function Addresses() {
       setFetchedData({ addresses: data });
     } catch (err) {
       console.log(err.message);
+      throw err;
     } finally {
       setIsDeleting(false);
     }
@@ -208,9 +225,12 @@ export default function Addresses() {
       <AddressModal
         isOpen={isOpen}
         onClose={() => {
+          setErrorMessage("");
           setEditTarget(null);
           onClose();
         }}
+        errorMessage={errorMessage}
+        setErrorMessage={setErrorMessage}
         mode={editTarget ? "edit" : "add"}
         existingAddress={editTarget}
         onDelete={handleDelete}
