@@ -1,4 +1,4 @@
-import Hero from "../../components/shared/Hero";
+import Hero from "./Hero";
 import Footer from "../../components/layout/Footer";
 import { VStack, Flex, Box, Text } from "@chakra-ui/react";
 import Container from "../../components/shared/Container";
