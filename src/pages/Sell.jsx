@@ -104,6 +104,7 @@ export default function Sell() {
     null,
   ]);
   const [uploadingIndex, setUploadingIndex] = useState("");
+  const [imageUploadError, setImageUploadError] = useState("");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
@@ -886,6 +887,29 @@ export default function Sell() {
             )}
           </AnimatePresence>
 
+          <AnimatePresence mode="wait">
+            {imageUploadError && (
+              <motion.div
+                key="image-upload-error"
+                initial={{ opacity: 0, y: -3 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 3 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Alert
+                  status="error"
+                  variant="left-accent"
+                  borderRadius="md"
+                  bg="red.50"
+                  mb={4}
+                >
+                  <AlertIcon />
+                  <Text fontSize="sm">{imageUploadError}</Text>
+                </Alert>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <Grid templateColumns="repeat(8, 1fr)" gap={4}>
             {[0, 1, 2, 3, 4].map((index) => {
               const url = uploadedImageUrls[index];
@@ -962,7 +986,8 @@ export default function Sell() {
                           e.target.files[0],
                           index,
                           setUploadedImageUrls,
-                          setUploadingIndex
+                          setUploadingIndex,
+                          setImageUploadError
                         )
                       }
                     />

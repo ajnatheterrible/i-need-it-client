@@ -2,11 +2,14 @@ export const handleImageUpload = async (
   file,
   index,
   setUploadedImageUrls,
-  setUploadingIndex
+  setUploadingIndex,
+  setImageUploadError
 ) => {
   if (!file) return;
 
   setUploadingIndex(index);
+  if (setImageUploadError) setImageUploadError("");
+
   try {
     const url = await uploadImageToCloudinary(file);
 
@@ -17,6 +20,9 @@ export const handleImageUpload = async (
     });
   } catch (err) {
     console.error(`❌ Upload failed for slot ${index + 1}:`, err);
+    if (setImageUploadError) {
+      setImageUploadError("Something went wrong. Please try again.");
+    }
   } finally {
     setUploadingIndex(null);
   }
@@ -26,7 +32,7 @@ export const uploadImageToCloudinary = async (file) => {
   const formData = new FormData();
   formData.append("file", file);
 
-  const res = await fetch("/api/market/upload-image", {
+  const res = await fetch("/api/market/upload-imae", {
     method: "POST",
     body: formData,
     credentials: "include",
@@ -36,30 +42,4 @@ export const uploadImageToCloudinary = async (file) => {
 
   const data = await res.json();
   return data.url;
-};
-
-export const handleMultipleUploads = async (
-  fileList,
-  clickedIndex,
-  setUploadedImageUrls,
-  setUploadingIndex
-) => {
-  const files = Array.from(fileList);
-
-  const emptyIndexes = uploadedImageUrls
-    .map((url, i) => (url === null ? i : null))
-    .filter((i) => i !== null && i >= clickedIndex);
-
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i];
-    const targetIndex = emptyIndexes[i];
-    if (targetIndex === undefined) break;
-
-    await handleImageUpload(
-      file,
-      targetIndex,
-      setUploadedImageUrls,
-      setUploadingIndex
-    );
-  }
 };
