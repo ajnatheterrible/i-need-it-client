@@ -7,14 +7,14 @@ import {
   Image,
   Badge,
   Flex,
+  Spinner,
 } from "@chakra-ui/react";
 import FilterSidebar from "../../components/sidebars/FilterSidebar";
-
 import { useState, useMemo } from "react";
 import { Link as RouterLink } from "react-router-dom";
+import { motion } from "framer-motion";
 
 import useAuthStore from "../../store/authStore";
-import { hasFetchedForSaleRef } from "../../hooks/useFetchForSale";
 import useFetchForSale from "../../hooks/useFetchForSale";
 import useFetchSizes from "../../hooks/useFetchSizes";
 import getTimestamp from "../../utils/getTimestamp";
@@ -31,8 +31,11 @@ export default function Profile() {
   const [isUsingMySizes, setIsUsingMySizes] = useState(false);
   const [sortOption, setSortOption] = useState("default");
 
-  useFetchSizes();
-  useFetchForSale();
+  const { loading: loadingSizes, error: errorSizes } = useFetchSizes();
+  const { loading: loadingForSale, error: errorForSale } = useFetchForSale();
+
+  const loading = loadingSizes || loadingForSale;
+  const error = errorSizes || errorForSale;
 
   const sizes = useAuthStore((s) => s.fetchedData?.sizes);
   const forSale = useAuthStore((s) => s.fetchedData?.forSale);
@@ -91,12 +94,30 @@ export default function Profile() {
     });
   }, [filtered, sortOption, forSale]);
 
-  if (!hasFetchedForSaleRef.current) {
-    return null;
+  if (loading) {
+    return (
+      <Box py={20} display="flex" justifyContent="center">
+        <Spinner size="xl" thickness="4px" color="gray.300" />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box py={20} textAlign="center">
+        <Text fontSize="sm" color="red.500">
+          {error}
+        </Text>
+      </Box>
+    );
   }
 
   return (
-    <>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.25 }}
+    >
       <Box position="sticky" top="70px" bg="white" zIndex={10} py={6}>
         <Flex justify="space-between" align="center">
           <Text fontWeight="semibold">
@@ -202,6 +223,6 @@ export default function Profile() {
           )}
         </Box>
       </Flex>
-    </>
+    </motion.div>
   );
 }

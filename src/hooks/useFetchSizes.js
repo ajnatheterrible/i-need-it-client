@@ -1,20 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import useAuthStore from "../store/authStore";
 
 export default function useFetchSizes() {
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
   const token = useAuthStore((s) => s.token);
   const setFetchedData = useAuthStore((s) => s.setFetchedData);
-  const hasFetchedRef = useRef(false);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!isLoggedIn || !token || hasFetchedRef.current) {
-      setLoading(false);
-      return;
-    }
+    if (!isLoggedIn || !token) return;
 
     const fetchSizes = async () => {
       try {
@@ -27,26 +23,24 @@ export default function useFetchSizes() {
           },
         });
 
+        const data = await res.json();
+
         if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(
-            errorData.message || "Failed to fetch sizes for this user"
-          );
+          throw new Error(data.message || "Failed to fetch sizes");
         }
 
-        const sizes = await res.json();
-        setFetchedData({ sizes });
-        hasFetchedRef.current = true;
+        setFetchedData({ sizes: data });
+        setError(null);
       } catch (err) {
-        console.error("❌ Error fetching user sizes:", err);
-        setError(err.message || "Unknown error");
+        console.error("❌ Error fetching sizes:", err);
+        setError(err.message || "Something went wrong");
       } finally {
         setLoading(false);
       }
     };
 
     fetchSizes();
-  }, []);
+  }, [isLoggedIn, token, setFetchedData]);
 
   return { loading, error };
 }
