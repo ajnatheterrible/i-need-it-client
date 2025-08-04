@@ -120,8 +120,17 @@ export default function AddressModal({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleBlur = (field) =>
+  const handleBlur = (field) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
+
+    setErrors((prev) => {
+      const newErrors = { ...prev };
+      if (formData[field]?.trim()) {
+        delete newErrors[field];
+      }
+      return newErrors;
+    });
+  };
 
   const handleSubmit = async () => {
     const isEqual =
@@ -132,54 +141,77 @@ export default function AddressModal({
       return;
     }
 
-    if (validate()) {
-      try {
-        setLoading(true);
+    const isValid = validate();
 
-        const endpoint =
-          mode === "edit"
-            ? `/api/users/addresses/${existingAddress._id}`
-            : "/api/users/addresses";
-        const method = mode === "edit" ? "PUT" : "POST";
+    if (!isValid) {
+      const requiredFields = [
+        "fullName",
+        "line1",
+        "city",
+        "state",
+        "country",
+        "zip",
+      ];
+      const updatedTouched = requiredFields.reduce(
+        (acc, field) => ({ ...acc, [field]: true }),
+        {}
+      );
+      setTouched((prev) => ({ ...updatedTouched, ...prev }));
+      return;
+    }
 
-        const res = await fetch(endpoint, {
-          method,
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(formData),
-        });
+    try {
+      setLoading(true);
 
-        const data = await res.json();
+      const endpoint =
+        mode === "edit"
+          ? `/api/users/addresses/${existingAddress._id}`
+          : "/api/users/addresses";
+      const method = mode === "edit" ? "PUT" : "POST";
 
-        if (!res.ok) throw new Error(data.message);
+      const res = await fetch(endpoint, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(formData),
+      });
 
-        setFetchedData({ addresses: data });
-        onClose();
-      } catch (err) {
-        setErrorMessage(err.message);
-      } finally {
-        setLoading(false);
-      }
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.message);
+
+      setFetchedData({ addresses: data });
+      onClose();
+    } catch (err) {
+      setErrorMessage(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     if (isOpen) {
-      setFormData(
-        existingAddress || {
-          fullName: "",
-          line1: "",
-          line2: "",
-          city: "",
-          state: "",
-          country: "",
-          zip: "",
-          phone: "",
-          isDefaultShipping: false,
-        }
-      );
+      const defaultData = {
+        fullName: "",
+        line1: "",
+        line2: "",
+        city: "",
+        state: "",
+        country: "",
+        zip: "",
+        phone: "",
+        isDefaultShipping: false,
+        isDefaultPurchase: false,
+      };
+
+      const newForm = existingAddress || defaultData;
+
+      setFormData(newForm);
+      setTouched({});
+      setErrors({});
+      setCountryInput(newForm.country || "");
     }
   }, [existingAddress, isOpen]);
 
