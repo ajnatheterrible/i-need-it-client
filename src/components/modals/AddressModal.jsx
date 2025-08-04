@@ -428,6 +428,7 @@ export default function AddressModal({
             <Checkbox
               name="isDefaultShipping"
               isChecked={formData.isDefaultShipping}
+              isDisabled={formData.isDefaultShipping && mode === "edit"}
               onChange={handleChange}
               fontSize="xs"
               colorScheme="gray"
