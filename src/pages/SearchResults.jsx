@@ -1,5 +1,3 @@
-import { useMemo, useState } from "react";
-
 import {
   Box,
   Heading,
@@ -14,6 +12,8 @@ import {
   Flex,
 } from "@chakra-ui/react";
 import { FaRegHeart, FaHeart } from "react-icons/fa";
+
+import { useMemo, useState, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import Container from "../components/shared/Container";
@@ -29,6 +29,8 @@ import useFetchSizes from "../hooks/useFetchSizes";
 import { toggleFavorite } from "../utils/favoriteUtils";
 import useAuthStore from "../store/authStore";
 import { useAuthModal } from "../context/AuthModalContext";
+
+import { AnimatePresence, motion } from "framer-motion";
 
 export default function SearchResults() {
   const onOpenAuthModal = useAuthModal();
@@ -59,12 +61,13 @@ export default function SearchResults() {
     priceMax: searchParams.get("priceMax") || null,
   });
 
-  const favoriteIds = useMemo(() => {
+  const [localFavoriteIds, setLocalFavoriteIds] = useState(() => {
     const favorites = fetchedData?.favorites;
-    if (!Array.isArray(favorites)) return [];
-
-    return favorites.map((f) => (f && typeof f === "object" ? f._id : f));
-  }, [fetchedData?.favorites]);
+    return Array.isArray(favorites)
+      ? favorites.map((f) => (f && typeof f === "object" ? f._id : f))
+      : [];
+  });
+  const debounceTimers = useRef({});
 
   useSyncSearchParams(
     filters,
@@ -97,18 +100,38 @@ export default function SearchResults() {
     );
   }
 
-  const handleFavorite = async (listingId) => {
+  const handleFavorite = (listingId) => {
     if (!isLoggedIn || !userId) return;
 
-    const isAlreadyFavorited = favoriteIds.includes(listingId);
+    const isCurrentlyFavorited = localFavoriteIds.includes(listingId);
 
-    try {
-      const data = await toggleFavorite(listingId, token, isAlreadyFavorited);
+    setLocalFavoriteIds((prev) =>
+      isCurrentlyFavorited
+        ? prev.filter((id) => id !== listingId)
+        : [...prev, listingId]
+    );
 
-      setFetchedData({ favorites: data.favorites });
-    } catch (err) {
-      console.error("❌ Failed to toggle favorite", err);
+    if (debounceTimers.current[listingId]) {
+      clearTimeout(debounceTimers.current[listingId]);
     }
+
+    debounceTimers.current[listingId] = setTimeout(async () => {
+      try {
+        const data = await toggleFavorite(
+          listingId,
+          token,
+          isCurrentlyFavorited
+        );
+        setFetchedData({ favorites: data.favorites });
+      } catch (err) {
+        setLocalFavoriteIds((prev) =>
+          isCurrentlyFavorited
+            ? [...prev, listingId]
+            : prev.filter((id) => id !== listingId)
+        );
+        console.error("Failed to toggle favorite:", err);
+      }
+    }, 400);
   };
 
   return (
@@ -165,118 +188,128 @@ export default function SearchResults() {
               <SearchResultsSkeleton />
             ) : (
               <Grid templateColumns="repeat(4, 1fr)" gap={6}>
-                {sortedListings.map((item) => (
-                  <Box key={item._id} overflow="hidden">
-                    <Box
-                      as="a"
-                      href={`/listing/${item._id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      _hover={{ textDecoration: "none" }}
+                <AnimatePresence mode="popLayout">
+                  {sortedListings.map((item) => (
+                    <motion.div
+                      key={item._id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.35 }}
                     >
-                      <Box position="relative" height="200px">
-                        <Image
-                          src={item.thumbnail}
-                          alt={item.title}
-                          height="100%"
-                          width="100%"
-                          objectFit="cover"
-                        />
-                        {item.isFreeShipping && (
-                          <Badge
-                            position="absolute"
-                            top="16px"
-                            left="8px"
-                            bg="#DCEF31"
-                            color="black"
-                            fontWeight="bold"
-                            fontSize="0.7em"
-                            px={2}
-                            py={1}
-                            borderRadius="sm"
-                          >
-                            FREE SHIPPING
-                          </Badge>
-                        )}
-                      </Box>
-                      <Box p={3} pt={3} pb={0}>
-                        <Text fontSize="xs" color="gray.500">
-                          {getTimestamp(item.createdAt)}
-                        </Text>
+                      <Box overflow="hidden">
                         <Box
-                          borderBottom="1px solid"
-                          borderColor="gray.200"
-                          my={2}
-                        />
-                      </Box>
-                    </Box>
-
-                    <Box px={3} pb={3}>
-                      <HStack justify="space-between" mt={1}>
-                        <Text
-                          fontWeight="bold"
-                          fontSize="sm"
-                          noOfLines={1}
-                          maxWidth="70%"
+                          as="a"
+                          href={`/listing/${item._id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          _hover={{ textDecoration: "none" }}
                         >
-                          {item.designer}
-                        </Text>
-                        <Text
-                          fontSize="xs"
-                          color="gray.600"
-                          whiteSpace="nowrap"
-                        >
-                          {item.size}
-                        </Text>
-                      </HStack>
-                      <Text fontSize="xs" color="gray.600" noOfLines={1}>
-                        {item.title}
-                      </Text>
-                      <HStack justify="space-between" mt={2}>
-                        <HStack spacing={2}>
-                          {item.originalPrice && (
-                            <Text
-                              fontSize="sm"
-                              color="gray.500"
-                              sx={{
-                                textDecoration: "line-through",
-                                textDecorationThickness: "2px",
-                              }}
-                            >
-                              ${item.originalPrice.toLocaleString()}
+                          <Box position="relative" height="200px">
+                            <Image
+                              src={item.thumbnail}
+                              alt={item.title}
+                              height="100%"
+                              width="100%"
+                              objectFit="cover"
+                            />
+                            {item.isFreeShipping && (
+                              <Badge
+                                position="absolute"
+                                top="16px"
+                                left="8px"
+                                bg="#DCEF31"
+                                color="black"
+                                fontWeight="bold"
+                                fontSize="0.7em"
+                                px={2}
+                                py={1}
+                                borderRadius="sm"
+                              >
+                                FREE SHIPPING
+                              </Badge>
+                            )}
+                          </Box>
+                          <Box p={3} pt={3} pb={0}>
+                            <Text fontSize="xs" color="gray.500">
+                              {getTimestamp(item.createdAt)}
                             </Text>
-                          )}
-                          <Text fontSize="sm" fontWeight="bold">
-                            ${item.price.toLocaleString()}
-                          </Text>
-                        </HStack>
+                            <Box
+                              borderBottom="1px solid"
+                              borderColor="gray.200"
+                              my={2}
+                            />
+                          </Box>
+                        </Box>
 
-                        {userId !== item.seller && (
-                          <IconButton
-                            size="sm"
-                            icon={
-                              favoriteIds.includes(item._id) ? (
-                                <FaHeart color="black" />
-                              ) : (
-                                <FaRegHeart />
-                              )
-                            }
-                            aria-label={
-                              favoriteIds.includes(item._id)
-                                ? "Unfavorite"
-                                : "Favorite"
-                            }
-                            onClick={() =>
-                              isLoggedIn
-                                ? handleFavorite(item._id)
-                                : onOpenAuthModal("register")
-                            }
-                          />
-                        )}
-                      </HStack>
-                    </Box>
-                  </Box>
-                ))}
+                        <Box px={3} pb={3}>
+                          <HStack justify="space-between" mt={1}>
+                            <Text
+                              fontWeight="bold"
+                              fontSize="sm"
+                              noOfLines={1}
+                              maxWidth="70%"
+                            >
+                              {item.designer}
+                            </Text>
+                            <Text
+                              fontSize="xs"
+                              color="gray.600"
+                              whiteSpace="nowrap"
+                            >
+                              {item.size}
+                            </Text>
+                          </HStack>
+                          <Text fontSize="xs" color="gray.600" noOfLines={1}>
+                            {item.title}
+                          </Text>
+                          <HStack justify="space-between" mt={2}>
+                            <HStack spacing={2}>
+                              {item.originalPrice && (
+                                <Text
+                                  fontSize="sm"
+                                  color="gray.500"
+                                  sx={{
+                                    textDecoration: "line-through",
+                                    textDecorationThickness: "2px",
+                                  }}
+                                >
+                                  ${item.originalPrice.toLocaleString()}
+                                </Text>
+                              )}
+                              <Text fontSize="sm" fontWeight="bold">
+                                ${item.price.toLocaleString()}
+                              </Text>
+                            </HStack>
+
+                            {userId !== item.seller && (
+                              <IconButton
+                                size="sm"
+                                icon={
+                                  localFavoriteIds.includes(item._id) ? (
+                                    <FaHeart color="black" />
+                                  ) : (
+                                    <FaRegHeart />
+                                  )
+                                }
+                                aria-label={
+                                  localFavoriteIds.includes(item._id)
+                                    ? "Unfavorite"
+                                    : "Favorite"
+                                }
+                                onClick={() =>
+                                  isLoggedIn
+                                    ? handleFavorite(item._id)
+                                    : onOpenAuthModal("register")
+                                }
+                              />
+                            )}
+                          </HStack>
+                        </Box>
+                      </Box>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
               </Grid>
             )}
           </Box>

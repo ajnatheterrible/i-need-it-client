@@ -7,7 +7,6 @@ import {
   Image,
   Badge,
   Flex,
-  Spinner,
 } from "@chakra-ui/react";
 import FilterSidebar from "../../components/sidebars/FilterSidebar";
 import { useState, useMemo } from "react";
@@ -18,6 +17,9 @@ import useAuthStore from "../../store/authStore";
 import useFetchForSale from "../../hooks/useFetchForSale";
 import useFetchSizes from "../../hooks/useFetchSizes";
 import getTimestamp from "../../utils/getTimestamp";
+import ListingGridSkeleton from "../../components/skeletons/SearchResultsSkeleton";
+
+const MotionBox = motion(Box);
 
 export default function Profile() {
   const [filters, setFilters] = useState({
@@ -94,14 +96,6 @@ export default function Profile() {
     });
   }, [filtered, sortOption, forSale]);
 
-  if (loading) {
-    return (
-      <Box py={20} display="flex" justifyContent="center">
-        <Spinner size="xl" thickness="4px" color="gray.300" />
-      </Box>
-    );
-  }
-
   if (error) {
     return (
       <Box py={20} textAlign="center">
@@ -113,14 +107,14 @@ export default function Profile() {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.25 }}
-    >
+    <>
       <Box position="sticky" top="70px" bg="white" zIndex={10} py={6}>
         <Flex justify="space-between" align="center">
-          <Text fontWeight="semibold">
+          <Text
+            fontWeight="semibold"
+            opacity={loading ? 0 : 1}
+            transition="opacity 0.3s ease"
+          >
             {sortedListings.length === 1
               ? `${sortedListings.length} listing`
               : `${sortedListings.length} listings`}
@@ -149,80 +143,95 @@ export default function Profile() {
         />
 
         <Box flex="1">
-          {sortedListings.length === 0 ? (
-            <Box py={20} textAlign="center" width="100%">
+          {loading ? (
+            <ListingGridSkeleton />
+          ) : sortedListings.length === 0 ? (
+            <MotionBox
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.25 }}
+              py={20}
+              textAlign="center"
+              width="100%"
+            >
               <Text fontSize="sm" color="gray.500">
                 You haven’t listed anything for sale yet
               </Text>
-            </Box>
+            </MotionBox>
           ) : (
-            <Grid templateColumns="repeat(4, 1fr)" gap={6}>
-              {sortedListings.map((item, i) => (
-                <Box key={item._id} overflow="hidden">
-                  <Box
-                    as={RouterLink}
-                    to={`/listing/${item._id}`}
-                    _hover={{ textDecoration: "none" }}
-                  >
-                    <Box position="relative" height="200px">
-                      <Image
-                        src={item.thumbnail}
-                        alt={item.title}
-                        height="100%"
-                        width="100%"
-                        objectFit="cover"
-                      />
-                      {item.isFreeShipping && (
-                        <Badge
-                          position="absolute"
-                          top="16px"
-                          left="8px"
-                          bg="#DCEF31"
-                          color="black"
-                          fontWeight="bold"
-                          fontSize="0.7em"
-                          px={2}
-                          py={1}
-                          borderRadius="sm"
-                        >
-                          FREE SHIPPING
-                        </Badge>
-                      )}
+            <MotionBox
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.25 }}
+            >
+              <Grid templateColumns="repeat(4, 1fr)" gap={6}>
+                {sortedListings.map((item) => (
+                  <Box key={item._id} overflow="hidden">
+                    <Box
+                      as={RouterLink}
+                      to={`/listing/${item._id}`}
+                      _hover={{ textDecoration: "none" }}
+                    >
+                      <Box position="relative" height="200px">
+                        <Image
+                          src={item.thumbnail}
+                          alt={item.title}
+                          height="100%"
+                          width="100%"
+                          objectFit="cover"
+                        />
+                        {item.isFreeShipping && (
+                          <Badge
+                            position="absolute"
+                            top="16px"
+                            left="8px"
+                            bg="#DCEF31"
+                            color="black"
+                            fontWeight="bold"
+                            fontSize="0.7em"
+                            px={2}
+                            py={1}
+                            borderRadius="sm"
+                          >
+                            FREE SHIPPING
+                          </Badge>
+                        )}
+                      </Box>
+                      <Box p={3} pt={3} pb={0}>
+                        <Text fontSize="xs" color="gray.500">
+                          {getTimestamp(item.createdAt)}
+                        </Text>
+                        <Box
+                          borderBottom="1px solid"
+                          borderColor="gray.200"
+                          my={2}
+                        />
+                      </Box>
                     </Box>
-                    <Box p={3} pt={3} pb={0}>
-                      <Text fontSize="xs" color="gray.500">
-                        {getTimestamp(item.createdAt)}
-                      </Text>
-                      <Box
-                        borderBottom="1px solid"
-                        borderColor="gray.200"
-                        my={2}
-                      />
-                    </Box>
-                  </Box>
 
-                  <Box px={3} pb={3}>
-                    <HStack justify="space-between" mt={1}>
-                      <Text fontWeight="bold" fontSize="sm" noOfLines={1}>
-                        {item.designer}
+                    <Box px={3} pb={3}>
+                      <HStack justify="space-between" mt={1}>
+                        <Text fontWeight="bold" fontSize="sm" noOfLines={1}>
+                          {item.designer}
+                        </Text>
+                        <Text fontSize="xs" color="gray.600">
+                          {item.size}
+                        </Text>
+                      </HStack>
+                      <Text fontSize="xs" color="gray.600" noOfLines={1}>
+                        {item.title}
                       </Text>
-                      <Text fontSize="xs" color="gray.600">
-                        {item.size}
+                      <Text fontSize="sm" fontWeight="bold" mt={4}>
+                        ${item.price?.toLocaleString()}
                       </Text>
-                    </HStack>
-                    <Text fontSize="xs" color="gray.600" noOfLines={1}>
-                      {item.title}
-                    </Text>
-                    <Text fontSize="sm" fontWeight="bold" mt={4}>
-                      ${item.price?.toLocaleString()}
-                    </Text>
+                    </Box>
                   </Box>
-                </Box>
-              ))}
-            </Grid>
+                ))}
+              </Grid>
+            </MotionBox>
           )}
         </Box>
       </Flex>
-    </motion.div>
+    </>
   );
 }

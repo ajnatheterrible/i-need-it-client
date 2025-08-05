@@ -11,10 +11,11 @@ import {
   IconButton,
   useToast,
 } from "@chakra-ui/react";
-import { FaHeart } from "react-icons/fa";
+import { FaRegHeart, FaHeart } from "react-icons/fa";
 
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 
 import Container from "../components/shared/Container";
 import Footer from "../components/layout/Footer";
@@ -32,36 +33,78 @@ export default function Favorites() {
 
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
   const token = useAuthStore((s) => s.token);
-  const favorites = useAuthStore((s) => s.fetchedData.favorites);
+  const fetchedFavorites = useAuthStore((s) => s.fetchedData.favorites);
   const setFetchedData = useAuthStore((s) => s.setFetchedData);
 
-  const sortedFavorites = useMemo(() => {
-    if (!favorites) return [];
+  const [initialFavorites, setInitialFavorites] = useState([]);
+  const [localFavoriteIds, setLocalFavoriteIds] = useState([]);
+  const debounceTimers = useRef({});
 
-    return [...favorites].sort((a, b) => {
+  useEffect(() => {
+    if (
+      Array.isArray(fetchedFavorites) &&
+      fetchedFavorites.length > 0 &&
+      initialFavorites.length === 0
+    ) {
+      setInitialFavorites(fetchedFavorites);
+      const ids = fetchedFavorites.map((f) =>
+        f && typeof f === "object" ? f._id : f
+      );
+      setLocalFavoriteIds(ids);
+    }
+  }, [fetchedFavorites]);
+
+  const sortedFavorites = useMemo(() => {
+    if (!initialFavorites) return [];
+
+    return [...initialFavorites].sort((a, b) => {
       if (sortOption === "price_low_high") return a.price - b.price;
       if (sortOption === "price_high_low") return b.price - a.price;
       if (sortOption === "date")
         return new Date(b.createdAt) - new Date(a.createdAt);
       return 0;
     });
-  }, [favorites, sortOption]);
+  }, [initialFavorites, sortOption]);
 
-  const handleUnfavorite = async (listingId) => {
+  const handleToggleFavorite = (listingId) => {
     if (!isLoggedIn) return;
 
-    try {
-      const data = await toggleFavorite(listingId, token, true);
-      setFetchedData({ favorites: data.favorites });
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: err.message,
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
+    const isCurrentlyFavorited = localFavoriteIds.includes(listingId);
+
+    setLocalFavoriteIds((prev) =>
+      isCurrentlyFavorited
+        ? prev.filter((id) => id !== listingId)
+        : [...prev, listingId]
+    );
+
+    if (debounceTimers.current[listingId]) {
+      clearTimeout(debounceTimers.current[listingId]);
     }
+
+    debounceTimers.current[listingId] = setTimeout(async () => {
+      try {
+        const data = await toggleFavorite(
+          listingId,
+          token,
+          isCurrentlyFavorited
+        );
+        setFetchedData({ favorites: data.favorites });
+      } catch (err) {
+        setLocalFavoriteIds((prev) =>
+          isCurrentlyFavorited
+            ? [...prev, listingId]
+            : prev.filter((id) => id !== listingId)
+        );
+
+        toast({
+          title: "Error",
+          description: "Failed to update favorite. Please try again.",
+          status: "error",
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+    }, 400);
   };
 
   return (
@@ -111,81 +154,101 @@ export default function Favorites() {
                 </Text>
               </Box>
             ) : (
-              sortedFavorites.map((item) => (
-                <Box key={item._id} overflow="hidden">
-                  <Box
-                    as={RouterLink}
-                    to={`/listing/${item._id}`}
-                    _hover={{ textDecoration: "none" }}
+              <AnimatePresence>
+                {sortedFavorites.map((item) => (
+                  <motion.div
+                    key={item._id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
                   >
-                    <Box position="relative" height="200px">
-                      <Image
-                        src={item.thumbnail}
-                        alt={item.title}
-                        height="100%"
-                        width="100%"
-                        objectFit="cover"
-                      />
-                      {item.isFreeShipping && (
-                        <Badge
-                          position="absolute"
-                          top="16px"
-                          left="8px"
-                          bg="#DCEF31"
-                          color="black"
-                          fontWeight="bold"
-                          fontSize="0.7em"
-                          px={2}
-                          py={1}
-                          borderRadius="sm"
-                        >
-                          FREE SHIPPING
-                        </Badge>
-                      )}
-                    </Box>
-
-                    <Box p={3} pt={3} pb={0}>
-                      <Text fontSize="xs" color="gray.500">
-                        {getTimestamp(item.createdAt)}
-                      </Text>
-
+                    <Box overflow="hidden">
                       <Box
-                        borderBottom="1px solid"
-                        borderColor="gray.200"
-                        my={2}
-                      />
+                        as={RouterLink}
+                        to={`/listing/${item._id}`}
+                        _hover={{ textDecoration: "none" }}
+                      >
+                        <Box position="relative" height="200px">
+                          <Image
+                            src={item.thumbnail}
+                            alt={item.title}
+                            height="100%"
+                            width="100%"
+                            objectFit="cover"
+                          />
+                          {item.isFreeShipping && (
+                            <Badge
+                              position="absolute"
+                              top="16px"
+                              left="8px"
+                              bg="#DCEF31"
+                              color="black"
+                              fontWeight="bold"
+                              fontSize="0.7em"
+                              px={2}
+                              py={1}
+                              borderRadius="sm"
+                            >
+                              FREE SHIPPING
+                            </Badge>
+                          )}
+                        </Box>
+
+                        <Box p={3} pt={3} pb={0}>
+                          <Text fontSize="xs" color="gray.500">
+                            {getTimestamp(item.createdAt)}
+                          </Text>
+
+                          <Box
+                            borderBottom="1px solid"
+                            borderColor="gray.200"
+                            my={2}
+                          />
+                        </Box>
+                      </Box>
+
+                      <Box px={3} pb={3}>
+                        <HStack justify="space-between" mt={1}>
+                          <Text fontWeight="bold" fontSize="sm" noOfLines={1}>
+                            {item.designer}
+                          </Text>
+                          <Text fontSize="xs" color="gray.600">
+                            {item.size}
+                          </Text>
+                        </HStack>
+
+                        <Text fontSize="xs" color="gray.600" noOfLines={1}>
+                          {item.title}
+                        </Text>
+
+                        <HStack justify="space-between" mt={4}>
+                          <Text fontSize="sm" fontWeight="bold">
+                            ${item?.price?.toLocaleString()}
+                          </Text>
+
+                          <IconButton
+                            size="sm"
+                            icon={
+                              localFavoriteIds.includes(item._id) ? (
+                                <FaHeart color="black" />
+                              ) : (
+                                <FaRegHeart />
+                              )
+                            }
+                            aria-label={
+                              localFavoriteIds.includes(item._id)
+                                ? "Unfavorite"
+                                : "Favorite"
+                            }
+                            onClick={() => handleToggleFavorite(item._id)}
+                          />
+                        </HStack>
+                      </Box>
                     </Box>
-                  </Box>
-
-                  <Box px={3} pb={3}>
-                    <HStack justify="space-between" mt={1}>
-                      <Text fontWeight="bold" fontSize="sm" noOfLines={1}>
-                        {item.designer}
-                      </Text>
-                      <Text fontSize="xs" color="gray.600">
-                        {item.size}
-                      </Text>
-                    </HStack>
-
-                    <Text fontSize="xs" color="gray.600" noOfLines={1}>
-                      {item.title}
-                    </Text>
-
-                    <HStack justify="space-between" mt={4}>
-                      <Text fontSize="sm" fontWeight="bold">
-                        ${item?.price?.toLocaleString()}
-                      </Text>
-
-                      <IconButton
-                        size="sm"
-                        icon={<FaHeart color="black" />}
-                        aria-label="Unfavorite"
-                        onClick={() => handleUnfavorite(item._id)}
-                      />
-                    </HStack>
-                  </Box>
-                </Box>
-              ))
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             )}
           </SimpleGrid>
         </Box>
