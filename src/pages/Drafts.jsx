@@ -10,6 +10,7 @@ import {
   SimpleGrid,
   Flex,
 } from "@chakra-ui/react";
+import { motion } from "framer-motion";
 
 import Container from "../components/shared/Container";
 import Footer from "../components/layout/Footer";
@@ -148,7 +149,15 @@ export default function Drafts() {
                       const completion = getDraftCompletionPercent(item);
 
                       return (
-                        <Box key={item._id} w="full" maxW="400px">
+                        <Box
+                          as={motion.div}
+                          key={item._id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ duration: 0.25 }}
+                          w="full"
+                          maxW="400px"
+                        >
                           <Flex align="start" gap={4}>
                             <Box
                               w="120px"
@@ -220,9 +229,19 @@ export default function Drafts() {
                     })}
                   </SimpleGrid>
                 ) : (
-                  <Text fontSize="md" fontWeight="heavy">
-                    You have no drafts
-                  </Text>
+                  <Box
+                    as={motion.div}
+                    w="full"
+                    textAlign="center"
+                    mt={10}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.25 }}
+                  >
+                    <Text fontSize="sm" color="gray.500">
+                      You have no drafts
+                    </Text>
+                  </Box>
                 )}
               </VStack>
             </GridItem>

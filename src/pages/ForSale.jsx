@@ -4,17 +4,32 @@ import {
   GridItem,
   Text,
   VStack,
+  HStack,
   Select,
   SimpleGrid,
   Button,
   Image,
+  Icon,
 } from "@chakra-ui/react";
+import { FaRegHeart } from "react-icons/fa";
+import { motion } from "framer-motion";
+
+import { Link as RouterLink } from "react-router-dom";
+
 import Container from "../components/shared/Container";
 import Footer from "../components/layout/Footer";
 import SellerSidebar from "../components/sidebars/SellerSidebar";
 import SellerProfileHeader from "../components/profile/SellerProfileHeader";
+import ForSaleSkeleton from "../components/skeletons/ForSaleSkeleton";
+
+import useAuthStore from "../store/authStore";
+import useFetchForSale from "../hooks/useFetchForSale";
+import getTimestamp from "../utils/getTimestamp";
 
 export default function ForSale() {
+  const { loading, error } = useFetchForSale();
+  const forSale = useAuthStore((s) => s.fetchedData?.forSale);
+
   return (
     <>
       <Container>
@@ -28,70 +43,134 @@ export default function ForSale() {
 
             <GridItem colSpan={10}>
               <VStack align="start" spacing={4}>
-                <Text fontSize="xl" fontWeight="bold">
+                <Text fontSize="xl" fontWeight="bold" mb={4}>
                   For Sale
                 </Text>
 
-                <SimpleGrid columns={3} spacing={6} w="full">
-                  {[...Array(9)].map((_, i) => (
-                    <Box
-                      key={i}
-                      borderWidth="1px"
-                      borderRadius="md"
-                      overflow="hidden"
-                    >
-                      <Box position="relative" height="200px">
-                        <Image
-                          src="/placeholder.jpg"
-                          alt="Leather mask hooded jacket"
-                          height="100%"
-                          width="100%"
-                          objectFit="cover"
-                        />
-                      </Box>
+                {loading ? (
+                  <ForSaleSkeleton />
+                ) : !forSale ? (
+                  <Box
+                    as={motion.div}
+                    w="full"
+                    textAlign="center"
+                    mt={10}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.25 }}
+                  >
+                    <Text fontSize="sm" color="gray.500">
+                      You haven’t listed anything for sale yet
+                    </Text>
+                  </Box>
+                ) : (
+                  <SimpleGrid
+                    as={motion.div}
+                    columns={3}
+                    spacing={6}
+                    w="full"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {forSale?.map((item) => (
+                      <Box key={item._id} overflow="hidden" mb={6}>
+                        <HStack align="start" spacing={0}>
+                          <Box
+                            as={RouterLink}
+                            to={`/listing/${item._id}`}
+                            position="relative"
+                            height="150px"
+                            w="110px"
+                            bg="gray.100"
+                            flexShrink={0}
+                          >
+                            <Image
+                              src={item.thumbnail}
+                              alt={item.title}
+                              height="100%"
+                              width="100%"
+                              objectFit="cover"
+                            />
+                          </Box>
 
-                      <Box p={3}>
-                        <Text fontSize="xs" color="gray.500">
-                          about 5 hours ago
-                        </Text>
-                        <Box
-                          borderBottom="1px solid"
-                          borderColor="gray.200"
-                          my={2}
-                        />
-                        <Box
-                          display="flex"
-                          justifyContent="space-between"
-                          mt={1}
-                        >
-                          <Text fontWeight="bold" fontSize="sm" noOfLines={1}>
-                            THE VIRIDI-ANNE
-                          </Text>
-                          <Text fontSize="xs" color="gray.600">
-                            M
-                          </Text>
-                        </Box>
-                        <Text fontSize="xs" color="gray.600" noOfLines={1}>
-                          Leather mask hooded jacket
-                        </Text>
-                        <Text fontSize="sm" fontWeight="bold" mt={2}>
-                          $1200
-                        </Text>
-                        <VStack spacing={2} mt={2} align="start">
-                          <Button size="xs" variant="outline">
+                          <Box p={3} flex="1">
+                            <Text fontSize="xs" color="gray.500">
+                              {getTimestamp(item.createdAt)}
+                            </Text>
+
+                            <Box
+                              display="flex"
+                              justifyContent="space-between"
+                              mt={1}
+                            >
+                              <Text
+                                fontWeight="bold"
+                                fontSize="sm"
+                                noOfLines={1}
+                              >
+                                {item.designer}
+                              </Text>
+                              <Text fontSize="xs" color="gray.600">
+                                {item.size}
+                              </Text>
+                            </Box>
+
+                            <Text fontSize="xs" color="gray.600" noOfLines={1}>
+                              {item.title}
+                            </Text>
+
+                            <HStack
+                              justify="space-between"
+                              align="baseline"
+                              w="full"
+                            >
+                              <Text fontSize="sm" fontWeight="bold" mt={6}>
+                                ${item.price?.toLocaleString()}
+                              </Text>
+                              <HStack spacing={1}>
+                                <Text fontSize="xs" fontWeight="semibold">
+                                  {item.favoritesCount}
+                                </Text>
+                                <Icon as={FaRegHeart} boxSize={2.5} />
+                              </HStack>
+                            </HStack>
+                          </Box>
+                        </HStack>
+
+                        <HStack spacing={2} mt={4} align="start">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            borderRadius="none"
+                            fontSize="xs"
+                            w="100%"
+                          >
                             PRICE DROP
                           </Button>
-                          <Button size="xs" variant="outline">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            borderRadius="none"
+                            fontSize="xs"
+                            w="100%"
+                          >
                             BUMP
                           </Button>
-                          <Button size="xs" variant="outline">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            borderRadius="none"
+                            fontSize="xs"
+                            w="100%"
+                          >
                             SEND OFFER
                           </Button>
-                        </VStack>
+                        </HStack>
                       </Box>
-                    </Box>
-                  ))}
-                </SimpleGrid>
+                    ))}
+                  </SimpleGrid>
+                )}
               </VStack>
             </GridItem>
           </Grid>

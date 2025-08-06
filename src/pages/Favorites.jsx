@@ -142,12 +142,16 @@ export default function Favorites() {
               [...Array(3)].map((_, i) => <FavoritesSkeleton key={i} />)
             ) : sortedFavorites.length === 0 ? (
               <Box
+                as={motion.div}
                 gridColumn="1 / -1"
                 display="flex"
                 justifyContent="center"
                 alignItems="center"
                 minHeight="25vh"
                 width="100%"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: loading ? 0 : 1 }}
+                transition={{ duration: 0.25 }}
               >
                 <Text fontSize="sm" color="gray.500">
                   You haven’t favorited anything yet

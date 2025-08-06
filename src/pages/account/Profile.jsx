@@ -96,16 +96,6 @@ export default function Profile() {
     });
   }, [filtered, sortOption, forSale]);
 
-  if (error) {
-    return (
-      <Box py={20} textAlign="center">
-        <Text fontSize="sm" color="red.500">
-          {error}
-        </Text>
-      </Box>
-    );
-  }
-
   return (
     <>
       <Box position="sticky" top="70px" bg="white" zIndex={10} py={6}>
