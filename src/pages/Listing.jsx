@@ -165,6 +165,8 @@ export default function ListingPage() {
 
   return (
     <>
+      {isLoading && <ListingSkeleton />}
+
       {!isLoading && listing && (
         <Container>
           <Grid templateColumns="repeat(12, 1fr)" gap={6} mt={10}>
