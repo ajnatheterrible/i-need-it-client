@@ -215,7 +215,7 @@ export default function ForgotPassword() {
                 isLoading={loading}
                 isDisabled={!isFormValid}
               >
-                RESET
+                Reset
               </Button>
             </>
           )

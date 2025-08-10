@@ -120,15 +120,15 @@ export default function Favorites() {
           </VStack>
 
           <HStack justify="center" spacing={4}>
-            <Text fontWeight="semibold">Sort By</Text>
+            <Text fontWeight="semibold">Sort by</Text>
             <Select
               maxW="160px"
               value={sortOption}
               onChange={(e) => setSortOption(e.target.value)}
             >
-              <option value="date">Date Added</option>
-              <option value="price_low_high">Price: Low to High</option>
-              <option value="price_high_low">Price: High to Low</option>
+              <option value="date">date added</option>
+              <option value="price_low_high">price: low to high</option>
+              <option value="price_high_low">price: high to low</option>
             </Select>
           </HStack>
 

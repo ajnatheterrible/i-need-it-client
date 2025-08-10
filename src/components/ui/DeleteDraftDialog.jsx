@@ -28,8 +28,7 @@ function DeleteDraftDialog({ onConfirm, isSubmitting, page }) {
               color: "red.500",
               border: "1px solid",
               borderColor: "red.500",
-              fontWeight: "bold",
-              textTransform: "uppercase",
+              fontWeight: "semibold",
               fontSize: "small",
               _hover: {
                 bg: "red.50",

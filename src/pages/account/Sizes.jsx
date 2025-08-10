@@ -161,10 +161,10 @@ export default function Sizes() {
                 <VStack align="start" spacing={8}>
                   <Box>
                     <Heading size="md" mb={1}>
-                      My Sizes
+                      My sizes
                     </Heading>
                     <Text fontSize="sm" color="gray.600">
-                      Set up to filter out listings that are not in your size.
+                      Set up to filter out listings that are not in your size
                     </Text>
                   </Box>
 
@@ -178,7 +178,7 @@ export default function Sizes() {
                         pb={2}
                         mr={4}
                       >
-                        MENSWEAR
+                        Menswear
                       </Tab>
                       <Tab
                         _selected={{
@@ -187,7 +187,7 @@ export default function Sizes() {
                         }}
                         pb={2}
                       >
-                        WOMENSWEAR
+                        Womenswear
                       </Tab>
                     </TabList>
 
@@ -215,7 +215,7 @@ export default function Sizes() {
                     onClick={handleSave}
                     isLoading={hasSubmitted}
                   >
-                    SAVE MY SIZES
+                    Save My Sizes
                   </Button>
                 </VStack>
               </motion.div>

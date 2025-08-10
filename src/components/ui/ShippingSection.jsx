@@ -36,7 +36,7 @@ export default function ShippingSection({
     <Box mb={16}>
       <Box mb={8}>
         <Heading fontSize="20px" fontWeight="bold" mb={2}>
-          Shipping From
+          Shipping from
         </Heading>
         <Text fontSize="sm" color="gray.500" mb={8}>
           Shipping options vary depending on the address you're sending your
@@ -55,7 +55,9 @@ export default function ShippingSection({
               <Text fontSize="sm" fontWeight="semibold">
                 {selectedAddress?.fullName}
               </Text>
-              <Text fontSize="sm">{selectedAddress?.line1}</Text>
+              <Text fontSize="sm" fontWeight="semibold">
+                {selectedAddress?.line1}
+              </Text>
               {selectedAddress?.line2 && (
                 <Text fontSize="sm">{selectedAddress.line2}</Text>
               )}
@@ -100,7 +102,7 @@ export default function ShippingSection({
 
       <Box>
         <Heading fontSize="20px" fontWeight="bold" mb={2}>
-          Shipping Regions
+          Shipping regions
         </Heading>
         <Text fontSize="sm" color="gray.500" mb={6}>
           Select regions you are willing to ship to

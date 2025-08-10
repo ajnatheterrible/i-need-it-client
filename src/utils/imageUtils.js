@@ -32,7 +32,7 @@ export const uploadImageToCloudinary = async (file) => {
   const formData = new FormData();
   formData.append("file", file);
 
-  const res = await fetch("/api/market/upload-imae", {
+  const res = await fetch("/api/market/upload-image", {
     method: "POST",
     body: formData,
     credentials: "include",

@@ -109,15 +109,9 @@ export default function FilterSidebar({
     >
       <VStack align="start" spacing={6}>
         {withTooltip(
-          <Box
-            border="1px solid"
-            borderColor="gray.200"
-            borderRadius="md"
-            p={4}
-            w="100%"
-          >
+          <Box border="1px solid" borderColor="gray.200" p={4} w="100%">
             <HStack justify="space-between" w="100%">
-              <Text fontWeight="bold">My Sizes</Text>
+              <Text fontWeight="bold">My sizes</Text>
               <Switch
                 isChecked={isUsingMySizes}
                 onChange={() =>
@@ -129,7 +123,7 @@ export default function FilterSidebar({
               />
             </HStack>
             <Text fontSize="sm" color="gray.600" mt={2}>
-              Turn on to filter out listings that are not in your size.
+              Turn on to filter out listings that are not in your size
             </Text>
 
             <Button
@@ -138,7 +132,7 @@ export default function FilterSidebar({
               }
               variant="link"
               size="xs"
-              mt={1}
+              mt={3}
             >
               Edit
             </Button>

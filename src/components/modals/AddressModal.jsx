@@ -116,6 +116,7 @@ export default function AddressModal({
     if (!formData.state) newErrors.state = "Required";
     if (!formData.country) newErrors.country = "Required";
     if (!formData.zip) newErrors.zip = "Required";
+    if (!formData.phone) newErrors.phone = "Required";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -151,6 +152,7 @@ export default function AddressModal({
         "state",
         "country",
         "zip",
+        "phone",
       ];
       const updatedTouched = requiredFields.reduce(
         (acc, field) => ({ ...acc, [field]: true }),
@@ -233,7 +235,7 @@ export default function AddressModal({
         <ModalBody pb={4} overflowY="auto" maxH="calc(90vh - 160px)" pr={4}>
           <FormControl mb={6} isInvalid={touched.fullName && errors.fullName}>
             <FormLabel fontSize="xs" fontWeight="semibold">
-              Legal Name
+              Legal name
             </FormLabel>
             <Input
               name="fullName"
@@ -259,7 +261,7 @@ export default function AddressModal({
                   fontWeight="semibold"
                   gap={1}
                 >
-                  Street Address
+                  Street address
                   <Tooltip
                     label="This must match your government ID"
                     bg="gray.50"
@@ -284,7 +286,7 @@ export default function AddressModal({
             <GridItem colSpan={6}>
               <FormControl>
                 <FormLabel fontSize="xs" fontWeight="semibold">
-                  Apt/Suite
+                  Apt/suite
                 </FormLabel>
                 <Input
                   name="line2"
@@ -296,7 +298,7 @@ export default function AddressModal({
             </GridItem>
 
             <GridItem colSpan={6}>
-              <FormControl>
+              <FormControl isInvalid={touched.phone && errors.phone}>
                 <FormLabel fontSize="xs" fontWeight="semibold">
                   Phone #
                 </FormLabel>
@@ -306,6 +308,7 @@ export default function AddressModal({
                   onChange={handleChange}
                   fontSize="sm"
                 />
+                <FormErrorMessage>Required</FormErrorMessage>
               </FormControl>
             </GridItem>
 
@@ -328,13 +331,14 @@ export default function AddressModal({
             <GridItem colSpan={6}>
               <FormControl isInvalid={touched.state && errors.state}>
                 <FormLabel fontSize="xs" fontWeight="semibold">
-                  State/Prov.
+                  State/prov.
                 </FormLabel>
                 <Input
                   name="state"
                   value={formData.state}
                   onChange={handleChange}
                   onBlur={() => handleBlur("state")}
+                  fontSize="sm"
                 />
                 <FormErrorMessage>Required</FormErrorMessage>
               </FormControl>
@@ -442,7 +446,7 @@ export default function AddressModal({
             <GridItem colSpan={6}>
               <FormControl isInvalid={touched.zip && errors.zip}>
                 <FormLabel fontSize="xs" fontWeight="semibold">
-                  Postal Code
+                  Postal code
                 </FormLabel>
                 <Input
                   name="zip"
@@ -465,7 +469,7 @@ export default function AddressModal({
               fontSize="xs"
               colorScheme="gray"
             >
-              <Text fontSize="xs">Make this my Default Return Address</Text>
+              <Text fontSize="xs">Make this my default return address</Text>
             </Checkbox>
 
             <Checkbox
@@ -475,7 +479,7 @@ export default function AddressModal({
               fontSize="xs"
               colorScheme="gray"
             >
-              <Text fontSize="xs">Make this my Default Purchase Address</Text>
+              <Text fontSize="xs">Make this my default purchase address</Text>
             </Checkbox>
           </VStack>
         </ModalBody>
@@ -493,7 +497,7 @@ export default function AddressModal({
             isLoading={loading}
             isDisabled={isDeleting}
           >
-            {mode === "edit" ? "SAVE CHANGES" : "SAVE ADDRESS"}
+            {mode === "edit" ? "Save Changes" : "Save Address"}
           </Button>
           {mode === "edit" && (
             <Button
@@ -514,7 +518,7 @@ export default function AddressModal({
               w="full"
               isDisabled={loading}
             >
-              DELETE
+              Delete
             </Button>
           )}
         </ModalFooter>

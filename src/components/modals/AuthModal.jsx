@@ -249,7 +249,7 @@ export default function AuthModal({
               isLoading={loading}
               isDisabled={!isFormValid}
             >
-              {view === "login" ? "LOG IN" : "SIGN UP"}
+              {view === "login" ? "Log In" : "Sign Up"}
             </Button>
 
             <HStack mt={4} justify="center" spacing="2">

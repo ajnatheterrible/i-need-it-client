@@ -43,7 +43,7 @@ export default function SellerProfileHeader() {
                   {user.username}
                 </Text>
                 <Tooltip
-                  label="Trusted Seller"
+                  label="Trusted seller"
                   hasArrow
                   bg="black"
                   color="white"
@@ -54,7 +54,7 @@ export default function SellerProfileHeader() {
                   </span>
                 </Tooltip>
                 <Tooltip
-                  label="Quick Responder"
+                  label="Quick responder"
                   hasArrow
                   bg="black"
                   color="white"
@@ -79,7 +79,7 @@ export default function SellerProfileHeader() {
         </GridItem>
 
         <GridItem colSpan={6}>
-          <HStack spacing={10}>
+          <HStack spacing={16}>
             <VStack spacing={0} align="start">
               <HStack spacing={1}>
                 <RouterLink to="/feedback">
@@ -95,21 +95,21 @@ export default function SellerProfileHeader() {
                 ))}
               </HStack>
               <Text fontSize="xs" color="gray.500">
-                16 Reviews
+                16 reviews
               </Text>
             </VStack>
 
             <VStack spacing={0} align="center">
               <Text fontWeight="semibold">41</Text>
               <Text fontSize="xs" color="gray.500">
-                Transactions
+                transactions
               </Text>
             </VStack>
 
             <VStack spacing={0} align="center">
               <Text fontWeight="semibold">12</Text>
               <Text fontSize="xs" color="gray.500">
-                Followers
+                followers
               </Text>
             </VStack>
           </HStack>
@@ -121,10 +121,11 @@ export default function SellerProfileHeader() {
               as={RouterLink}
               to="/sell"
               size="xs"
-              colorScheme="gray"
-              variant="solid"
+              variant="outline"
+              fontWeight="semibold"
+              fontSize="xs"
             >
-              + NEW LISTING
+              + New Listing
             </Button>
 
             <Popover trigger="hover" placement="bottom-end">
@@ -144,8 +145,7 @@ export default function SellerProfileHeader() {
                   <VStack spacing={3} align="start">
                     <Text
                       fontSize="xs"
-                      fontWeight="bold"
-                      textTransform="uppercase"
+                      fontWeight="semibold"
                       cursor="pointer"
                       _hover={{ color: "gray.600" }}
                     >
@@ -153,8 +153,7 @@ export default function SellerProfileHeader() {
                     </Text>
                     <Text
                       fontSize="xs"
-                      fontWeight="bold"
-                      textTransform="uppercase"
+                      fontWeight="semibold"
                       cursor="pointer"
                       _hover={{ color: "gray.600" }}
                     >
@@ -162,13 +161,12 @@ export default function SellerProfileHeader() {
                     </Text>
                     <Text
                       fontSize="xs"
-                      fontWeight="bold"
-                      textTransform="uppercase"
+                      fontWeight="semibold"
                       cursor="pointer"
                       _hover={{ color: "gray.600" }}
                       onClick={onCopy}
                     >
-                      Copy Link
+                      Copy link
                     </Text>
                   </VStack>
                 </PopoverBody>

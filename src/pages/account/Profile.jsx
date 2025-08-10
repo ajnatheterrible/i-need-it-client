@@ -115,10 +115,10 @@ export default function Profile() {
             value={sortOption}
             onChange={(e) => setSortOption(e.target.value)}
           >
-            <option value="default">Sort by: Default</option>
-            <option value="price_low_high">Price: Low to High</option>
-            <option value="price_high_low">Price: High to Low</option>
-            <option value="recent">Most Recent</option>
+            <option value="default">Sort by: default</option>
+            <option value="price_low_high">Price: low to high</option>
+            <option value="price_high_low">Price: high to low</option>
+            <option value="recent">Most recent</option>
           </Select>
         </Flex>
       </Box>

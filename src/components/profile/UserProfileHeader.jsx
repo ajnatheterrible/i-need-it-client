@@ -78,7 +78,7 @@ export default function UserProfileHeader() {
                   colorScheme="purple"
                   bg="purple.50"
                 >
-                  Trusted Seller
+                  Trusted seller
                 </Button>
                 <Button
                   leftIcon={<FiZap />}
@@ -89,7 +89,7 @@ export default function UserProfileHeader() {
                   colorScheme="purple"
                   bg="purple.50"
                 >
-                  Quick Responder
+                  Quick responder
                 </Button>
               </HStack>
             </VStack>
@@ -102,20 +102,23 @@ export default function UserProfileHeader() {
               <Icon as={FaStar} color="black" boxSize={3.5} />
               <Text fontWeight="semibold" fontSize="sm">
                 4.9{" "}
-                <ChakraLink
-                  as={RouterLink}
-                  to="/profile/reviews"
-                  textDecor="underline"
-                >
-                  16 Reviews
-                </ChakraLink>
               </Text>
             </HStack>
             <Text fontWeight="semibold" fontSize="sm">
-              5 Following
+              <ChakraLink
+                as={RouterLink}
+                to="/profile/reviews"
+                textDecor="underline"
+              >
+                16 reviews
+              </ChakraLink>
+            </Text>
+
+            <Text fontWeight="semibold" fontSize="sm">
+              5 following
             </Text>
             <Text fontWeight="semibold" fontSize="sm">
-              12 Followers
+              12 followers
             </Text>
           </HStack>
         </GridItem>
@@ -125,12 +128,12 @@ export default function UserProfileHeader() {
             <Button
               variant="outline"
               size="xs"
-              fontWeight="bold"
+              fontWeight="semibold"
               fontSize="xs"
               as={RouterLink}
               to="/profile-settings"
             >
-              EDIT PROFILE
+              Edit Profile
             </Button>
             <Popover trigger="hover" placement="bottom-end">
               <PopoverTrigger>
@@ -149,8 +152,7 @@ export default function UserProfileHeader() {
                   <VStack spacing={3} align="start">
                     <Text
                       fontSize="xs"
-                      fontWeight="bold"
-                      textTransform="uppercase"
+                      fontWeight="semibold"
                       cursor="pointer"
                       _hover={{ color: "gray.600" }}
                     >
@@ -158,8 +160,7 @@ export default function UserProfileHeader() {
                     </Text>
                     <Text
                       fontSize="xs"
-                      fontWeight="bold"
-                      textTransform="uppercase"
+                      fontWeight="semibold"
                       cursor="pointer"
                       _hover={{ color: "gray.600" }}
                     >
@@ -167,13 +168,12 @@ export default function UserProfileHeader() {
                     </Text>
                     <Text
                       fontSize="xs"
-                      fontWeight="bold"
-                      textTransform="uppercase"
+                      fontWeight="semibold"
                       cursor="pointer"
                       _hover={{ color: "gray.600" }}
                       onClick={onCopy}
                     >
-                      Copy Link
+                      Copy link
                     </Text>
                   </VStack>
                 </PopoverBody>

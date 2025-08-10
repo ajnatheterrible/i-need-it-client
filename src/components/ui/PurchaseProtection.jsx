@@ -36,7 +36,7 @@ export const PurchaseProtection = () => {
         cursor="pointer"
       >
         <Text fontWeight="bold" fontSize="sm">
-          How You're Protected
+          How you're protected
         </Text>
         <IconButton
           icon={isOpen ? <ChevronUpIcon /> : <ChevronDownIcon />}

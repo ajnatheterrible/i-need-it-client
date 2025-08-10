@@ -114,14 +114,14 @@ export default function Addresses() {
                     onClick={onOpen}
                     borderRadius="none"
                   >
-                    + ADD NEW ADDRESS
+                    + Add New Address
                   </Button>
                 </HStack>
 
                 <VStack spacing={10} align="start" fontSize="sm" w="full">
                   <Box w="100%">
                     <HStack spacing={3} mb={1} align="center">
-                      <Heading size="sm">Default Return Address</Heading>
+                      <Heading size="sm">Default return address</Heading>
                       <Tooltip
                         label="The address you ship packages from when selling"
                         fontSize="xs"
@@ -165,7 +165,7 @@ export default function Addresses() {
 
                   <Box w="100%">
                     <HStack spacing={3} mb={1} align="center">
-                      <Heading size="sm">All Shipping Addresses</Heading>
+                      <Heading size="sm">All shipping addresses</Heading>
                       <Tooltip
                         label="Your address options for purchases"
                         fontSize="xs"

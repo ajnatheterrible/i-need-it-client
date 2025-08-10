@@ -22,7 +22,7 @@ export default function ResetRequestForm({
         {error && <Text color="red.500">{error}</Text>}
       </VStack>
       <Button colorScheme="blackAlpha" onClick={onSubmit} isLoading={loading}>
-        SEND RESET LINK
+        Send Reset Link
       </Button>
     </VStack>
   );

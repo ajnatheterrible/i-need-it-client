@@ -338,10 +338,10 @@ export default function ListingPage() {
                         flex="1"
                         onClick={() => {
                           if (!isLoggedIn) return onOpenAuthModal("register");
-                          navigate("/checkout");
+                          navigate(`/checkout/${listing._id}`);
                         }}
                       >
-                        PURCHASE
+                        Purchase
                       </Button>
                     </HStack>
 
@@ -355,7 +355,7 @@ export default function ListingPage() {
                             onOfferOpen();
                           }}
                         >
-                          OFFER
+                          Offer
                         </Button>
                       )}
                       <Button
@@ -366,27 +366,27 @@ export default function ListingPage() {
                           onMessageOpen();
                         }}
                       >
-                        MESSAGE
+                        Message
                       </Button>
                     </HStack>
                   </VStack>
                 ) : (
                   <VStack w="100%" spacing={2}>
                     <Button w="100%" colorScheme="blackAlpha">
-                      DROP PRICE
+                      Drop Price
                     </Button>
                     <Button
                       w="100%"
                       variant="outline"
                       onClick={() => navigate(`/sell/edit/${listing._id}`)}
                     >
-                      EDIT
+                      Edit
                     </Button>
                     <Button w="100%" variant="outline">
-                      SEND OFFER
+                      Send Offer
                     </Button>
                     <Button w="100%" variant="outline">
-                      DELETE
+                      Delete
                     </Button>
                   </VStack>
                 )}
@@ -417,7 +417,7 @@ export default function ListingPage() {
                         if (!isLoggedIn) return onOpenAuthModal("register");
                       }}
                     >
-                      FOLLOW
+                      Follow
                     </Button>
                   )}
                 </HStack>
@@ -427,7 +427,7 @@ export default function ListingPage() {
                 {listing?.description && (
                   <Box>
                     <Heading size="xs" mb={2}>
-                      Seller Description
+                      Seller description
                     </Heading>
                     <Text fontSize="sm" mb={1} whiteSpace="pre-line">
                       {listing.description}
@@ -509,7 +509,6 @@ export default function ListingPage() {
                       size="sm"
                       fontWeight="bold"
                       fontSize="xs"
-                      textTransform="uppercase"
                       leftIcon={<WarningIcon boxSize={3.5} />}
                       onClick={() => {
                         if (!isLoggedIn) return onOpenAuthModal("register");

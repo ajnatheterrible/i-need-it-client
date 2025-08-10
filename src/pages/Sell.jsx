@@ -1084,6 +1084,7 @@ export default function Sell() {
         onClose={onClose}
         addresses={addresses}
         onSelect={setSelectedAddress}
+        onAddNewAddress={addOnOpen}
       />
 
       <AddressModal isOpen={addIsOpen} onClose={addOnClose} />

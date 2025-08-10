@@ -205,11 +205,8 @@ export default function Drafts() {
                             <Button
                               w="full"
                               size="sm"
-                              bg="black"
-                              color="white"
-                              fontWeight="extrabold"
+                              fontWeight="semibold"
                               fontSize="xs"
-                              textTransform="uppercase"
                               _hover={{ bg: "gray.800" }}
                               onClick={() =>
                                 navigate(`/sell/draft/${item._id}`)

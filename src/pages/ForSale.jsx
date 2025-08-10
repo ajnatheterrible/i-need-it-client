@@ -44,7 +44,7 @@ export default function ForSale() {
             <GridItem colSpan={10}>
               <VStack align="start" spacing={4}>
                 <Text fontSize="xl" fontWeight="bold" mb={4}>
-                  For Sale
+                  For sale
                 </Text>
 
                 {loading ? (
@@ -146,7 +146,7 @@ export default function ForSale() {
                             fontSize="xs"
                             w="100%"
                           >
-                            PRICE DROP
+                            Price Drop
                           </Button>
                           <Button
                             size="sm"
@@ -155,7 +155,7 @@ export default function ForSale() {
                             fontSize="xs"
                             w="100%"
                           >
-                            BUMP
+                            Bump
                           </Button>
                           <Button
                             size="sm"
@@ -164,7 +164,7 @@ export default function ForSale() {
                             fontSize="xs"
                             w="100%"
                           >
-                            SEND OFFER
+                            Send Offer
                           </Button>
                         </HStack>
                       </Box>

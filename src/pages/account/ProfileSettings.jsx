@@ -382,7 +382,7 @@ export default function ProfileSettings() {
                 <VStack align="start" spacing={10}>
                   <Box w="full">
                     <Heading size="md" mb={6}>
-                      Profile Settings
+                      Profile settings
                     </Heading>
                     <FormControl mt={6} maxW="sm">
                       <FormLabel>Username</FormLabel>
@@ -528,7 +528,7 @@ export default function ProfileSettings() {
                         display="flex"
                         justifyContent="space-between"
                       >
-                        <FormLabel m={0}>Make my Favorites public</FormLabel>
+                        <FormLabel m={0}>Make my favorites public</FormLabel>
                         <Switch
                           isChecked={favoritesPublic}
                           onChange={() => {
@@ -543,9 +543,9 @@ export default function ProfileSettings() {
                         justifyContent="space-between"
                       >
                         <Box>
-                          <FormLabel m={0}>Make my Closet public</FormLabel>
+                          <FormLabel m={0}>Make my closet public</FormLabel>
                           <Text fontSize="sm" color="gray.500">
-                            This includes purchases and pricing.
+                            This includes purchases and pricing
                           </Text>
                         </Box>
                         <Switch
@@ -562,7 +562,7 @@ export default function ProfileSettings() {
                         justifyContent="space-between"
                       >
                         <FormLabel m={0}>
-                          Make my Following list public
+                          Make my following list public
                         </FormLabel>
                         <Switch
                           isChecked={followingPublic}
@@ -578,7 +578,7 @@ export default function ProfileSettings() {
                         justifyContent="space-between"
                       >
                         <FormLabel m={0}>
-                          Make my Followers list public
+                          Make my followers list public
                         </FormLabel>
                         <Switch
                           isChecked={followersPublic}
@@ -600,7 +600,7 @@ export default function ProfileSettings() {
                     isLoading={submitting}
                     isDisabled={emailError || usernameError}
                   >
-                    SAVE CHANGES
+                    Save Changes
                   </Button>
                 </VStack>
               </motion.div>

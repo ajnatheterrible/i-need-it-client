@@ -5,7 +5,7 @@ export default function useFetchAddresses() {
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
   const token = useAuthStore((s) => s.token);
   const setFetchedData = useAuthStore((s) => s.setFetchedData);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {

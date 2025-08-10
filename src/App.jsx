@@ -87,7 +87,6 @@ export default function App() {
 
           <Route path="shop" element={<SearchResults />} />
           <Route path="listing/:id" element={<Listing />} />
-          <Route path="listing" element={<Listing />} />
           <Route path="help" element={<Help />} />
           <Route path="about" element={<About />} />
           <Route path="privacy" element={<Privacy />} />
@@ -104,7 +103,7 @@ export default function App() {
         </Route>
 
         <Route element={<ProtectedRoute />}>
-          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/checkout/:id" element={<Checkout />} />
         </Route>
 
         <Route path="complete-signup" element={<CompleteSignup />} />
