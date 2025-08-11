@@ -18,7 +18,7 @@ import {
 import { WarningIcon } from "@chakra-ui/icons";
 import { FaHeart, FaRegHeart } from "react-icons/fa";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { Link as RouterLink, useParams, useNavigate } from "react-router-dom";
 
 import useFetchFavorites from "../hooks/useFetchFavorites";
@@ -76,34 +76,75 @@ export default function ListingPage() {
 
   useFetchFavorites();
 
-  const favoriteIds = useMemo(() => {
-    if (!Array.isArray(favorites)) return [];
+  const [localFavoriteIds, setLocalFavoriteIds] = useState(() => {
+    return Array.isArray(favorites)
+      ? favorites.map((f) => (f && typeof f === "object" ? f._id : f))
+      : [];
+  });
 
-    return favorites.map((f) => (f && typeof f === "object" ? f._id : f));
-  }, [favorites]);
+  const debounceTimers = useRef({});
 
-  const handleFavorite = async (listingId) => {
+  const handleFavorite = (listingId) => {
     if (!isLoggedIn) return onOpenAuthModal("register");
 
-    const isFavorited = favoriteIds.includes(listingId);
+    const isFavorited = localFavoriteIds.includes(listingId);
 
-    try {
-      const data = await toggleFavorite(listingId, token, isFavorited);
-      setFetchedData({ favorites: [...data.favorites] });
+    setLocalFavoriteIds((prev) =>
+      isFavorited ? prev.filter((id) => id !== listingId) : [...prev, listingId]
+    );
 
-      const updated = data.favorites.find((f) => f._id === listingId);
+    setListing((prev) =>
+      prev && prev._id === listingId
+        ? {
+            ...prev,
+            favoritesCount: Math.max(
+              0,
+              prev.favoritesCount + (isFavorited ? -1 : 1)
+            ),
+          }
+        : prev
+    );
 
-      if (updated) {
-        setListing(updated);
-      } else {
-        setListing((prev) => ({
-          ...prev,
-          favoritesCount: Math.max(0, (prev.favoritesCount || 1) - 1),
-        }));
-      }
-    } catch (err) {
-      console.error(err);
+    if (debounceTimers.current[listingId]) {
+      clearTimeout(debounceTimers.current[listingId]);
     }
+
+    debounceTimers.current[listingId] = setTimeout(async () => {
+      try {
+        const data = await toggleFavorite(listingId, token, isFavorited);
+        setFetchedData({ favorites: data.favorites });
+
+        // Optional: update listing with the newest favorite count from the server
+        const updated = data.favorites.find((f) => f._id === listingId);
+        if (updated) {
+          setListing((prev) =>
+            prev && prev._id === listingId
+              ? { ...prev, favoritesCount: updated.favoritesCount }
+              : prev
+          );
+        }
+      } catch (err) {
+        setLocalFavoriteIds((prev) =>
+          isFavorited
+            ? [...prev, listingId]
+            : prev.filter((id) => id !== listingId)
+        );
+
+        setListing((prev) =>
+          prev && prev._id === listingId
+            ? {
+                ...prev,
+                favoritesCount: Math.max(
+                  0,
+                  prev.favoritesCount + (isFavorited ? 1 : -1)
+                ),
+              }
+            : prev
+        );
+
+        console.error("Failed to toggle favorite:", err);
+      }
+    }, 400);
   };
 
   const {
@@ -255,7 +296,7 @@ export default function ListingPage() {
                     <IconButton
                       p={1}
                       icon={
-                        favoriteIds.includes(listing?._id) ? (
+                        localFavoriteIds.includes(listing?._id) ? (
                           <FaHeart />
                         ) : (
                           <FaRegHeart />
