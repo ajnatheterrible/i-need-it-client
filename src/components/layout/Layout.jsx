@@ -1,6 +1,7 @@
 import { Outlet, useLocation } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { Box } from "@chakra-ui/react";
+import { useDisclosure } from "@chakra-ui/react";
 
 import { AuthModalContext } from "../../context/AuthModalContext";
 import useAuthStore from "../../store/authStore";
@@ -10,6 +11,7 @@ import NavbarGuest from "./NavbarGuest";
 import AuthModal from "../modals/AuthModal";
 import ScrollToTop from "../shared/ScrollToTop";
 import OAuthErrorModal from "../modals/OAuthErrorModal";
+import BonusModal from "../modals/BonusModal";
 
 export default function Layout() {
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
@@ -20,6 +22,12 @@ export default function Layout() {
   const [oauthError, setOAuthError] = useState(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authView, setAuthView] = useState("login");
+
+  const {
+    isOpen: isBonusOpen,
+    onOpen: onOpenBonusModal,
+    onClose: onCloseBonusModal,
+  } = useDisclosure();
 
   const onOpenAuthModal = (view) => {
     setAuthView(view);
@@ -67,6 +75,7 @@ export default function Layout() {
           view={authView}
           setView={setAuthView}
           finalFocusRef={fallbackRef}
+          onRegisterSuccess={onOpenBonusModal}
         />
 
         <Box pt="112px">
@@ -83,6 +92,12 @@ export default function Layout() {
           errorType={oauthError}
         />
       </Box>
+
+      <BonusModal
+        isOpen={isBonusOpen}
+        onClose={onCloseBonusModal}
+        finalFocusRef={fallbackRef}
+      />
     </AuthModalContext.Provider>
   );
 }

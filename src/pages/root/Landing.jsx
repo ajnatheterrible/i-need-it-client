@@ -1,6 +1,7 @@
+import { VStack, Flex, Box, Text, Button } from "@chakra-ui/react";
+
 import Hero from "./Hero";
 import Footer from "../../components/layout/Footer";
-import { VStack, Flex, Box, Text } from "@chakra-ui/react";
 import Container from "../../components/shared/Container";
 
 const Landing = () => {
@@ -19,12 +20,10 @@ const Landing = () => {
               <Box flex="1" h="300px" bg="gray.200" />
             </Flex>
           </Box>
-
           <Flex gap="24px">
             <Box flex="1" h="300px" bg="gray.100" />
             <Box flex="2" h="300px" bg="gray.200" />
           </Flex>
-
           <Box>
             <Text mb="16px">Latest Collections</Text>
             <Flex gap="24px">
@@ -33,7 +32,6 @@ const Landing = () => {
               <Box flex="1" h="300px" bg="gray.200" />
             </Flex>
           </Box>
-
           <Flex gap="24px">
             <Box flex="2" h="300px" bg="gray.100" />
             <Box flex="1" h="300px" bg="gray.200" />

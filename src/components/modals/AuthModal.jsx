@@ -28,6 +28,7 @@ export default function AuthModal({
   onClose,
   view = "login",
   setView,
+  onRegisterSuccess,
 }) {
   const [formData, setFormData] = useState({
     username: "",
@@ -88,6 +89,12 @@ export default function AuthModal({
         login(data.user, data.accessToken);
 
         onClose();
+
+        if (view === "register") {
+          setTimeout(() => {
+            onRegisterSuccess?.();
+          }, 200);
+        }
       } else {
         setErrorMessage(data.message || "Something went wrong");
       }
