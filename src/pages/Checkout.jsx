@@ -19,13 +19,16 @@ import { ChevronRightIcon, InfoIcon } from "@chakra-ui/icons";
 
 import { FaBoxOpen, FaTruck, FaBolt } from "react-icons/fa";
 import { FaRegCreditCard } from "react-icons/fa";
+import { FaCcVisa, FaCcMastercard } from "react-icons/fa";
 import { PuffLoader } from "react-spinners";
 
 import Container from "../components/shared/Container";
 import AddressSelectModal from "../components/modals/AddressSelectModal";
+import CardSelectModal from "../components/modals/CardSelectModal";
 import AddressModal from "../components/modals/AddressModal";
 import KlarnaSvg from "../../public/assets/logos/KlarnaSvg";
 import AffirmSvg from "../../public/assets/logos/AffirmSvg";
+import ShinyButton from "../components/ui/ShinyButton";
 
 import { Link as RouterLink } from "react-router-dom";
 import { useParams } from "react-router-dom";
@@ -34,6 +37,8 @@ import { useDisclosure } from "@chakra-ui/react";
 
 import useAuthStore from "../store/authStore";
 import useFetchAddresses from "../hooks/useFetchAddresses";
+import useFetchPaymentMethods from "../hooks/useFetchPaymentMethods";
+import { calculateTotal } from "../utils/calculateOrder";
 
 export default function CheckoutPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -41,23 +46,44 @@ export default function CheckoutPage() {
 
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState("card");
+  const [selectedCard, setSelectedCard] = useState(null);
 
   const { id } = useParams();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: isCardSelectOpen,
+    onOpen: openCardSelectModal,
+    onClose: closeCardSelectModal,
+  } = useDisclosure();
   const {
     isOpen: isAddressModalOpen,
     onOpen: openAddressModal,
     onClose: closeAddressModal,
   } = useDisclosure();
 
+  const { loading: paymentsLoading } = useFetchPaymentMethods();
   const { loading: addressesLoading } = useFetchAddresses();
   const addresses = useAuthStore((s) => s.fetchedData?.addresses);
+  const paymentMethods = useAuthStore((s) => s.fetchedData?.paymentMethods);
 
   const formatPhoneNumber = (phone) => {
     if (!phone) return "";
     const cleaned = phone.replace(/\D/g, "");
     const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
     return match ? `(${match[1]}) ${match[2]}-${match[3]}` : phone;
+  };
+
+  const formatExp = (expMonth, expYear) => {
+    const paddedMonth = expMonth.toString().padStart(2, "0");
+    return `Exp. ${paddedMonth} / ${expYear}`;
+  };
+
+  const formatCurrencyDisplay = (amount) => {
+    if (isNaN(amount)) return "$0.00";
+    return `$${Number(amount).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
   };
 
   useEffect(() => {
@@ -86,7 +112,17 @@ export default function CheckoutPage() {
     setDefaultAddress();
   }, [id, addressesLoading, addresses]);
 
-  if (isLoading || addressesLoading) {
+  const price = listing?.price || 0;
+  const { tax, shipping, total, totalInCents } = calculateTotal(price);
+
+  useEffect(() => {
+    if (paymentMethods?.length > 0) {
+      const defaultCard = paymentMethods.find((c) => c.isDefault);
+      setSelectedCard(defaultCard || paymentMethods[0]);
+    }
+  }, [paymentMethods]);
+
+  if (isLoading || addressesLoading || paymentsLoading) {
     return (
       <Box
         display="flex"
@@ -169,12 +205,36 @@ export default function CheckoutPage() {
               <VStack align="start" spacing={2} w="100%">
                 <HStack justify="space-between" w="100%" fontSize="xs">
                   <Text>Listing price</Text>
-                  <Text>${listing?.price}</Text>
+                  {paymentMethod === "credit" ? (
+                    <HStack spacing={2}>
+                      <Text as="s" color="gray.500">
+                        {formatCurrencyDisplay(listing?.price)}
+                      </Text>
+                      <Text fontWeight="semibold">
+                        {formatCurrencyDisplay(0)}
+                      </Text>
+                    </HStack>
+                  ) : (
+                    <Text>{formatCurrencyDisplay(listing?.price)}</Text>
+                  )}
                 </HStack>
+
                 <HStack justify="space-between" w="100%" fontSize="xs">
                   <Text>Shipping</Text>
-                  <Text>$24</Text>
+                  {paymentMethod === "credit" ? (
+                    <HStack spacing={2}>
+                      <Text as="s" color="gray.500">
+                        {formatCurrencyDisplay(shipping)}
+                      </Text>
+                      <Text fontWeight="semibold">
+                        {formatCurrencyDisplay(0)}
+                      </Text>
+                    </HStack>
+                  ) : (
+                    <Text>{formatCurrencyDisplay(shipping)}</Text>
+                  )}
                 </HStack>
+
                 <HStack justify="space-between" w="100%" fontSize="xs">
                   <Text>
                     Estimated tax{" "}
@@ -192,7 +252,18 @@ export default function CheckoutPage() {
                       <InfoIcon boxSize={3} ml={1} color="gray.500" />
                     </Tooltip>
                   </Text>
-                  <Text>$96.18</Text>
+                  {paymentMethod === "credit" ? (
+                    <HStack spacing={2}>
+                      <Text as="s" color="gray.500">
+                        {formatCurrencyDisplay(tax)}
+                      </Text>
+                      <Text fontWeight="semibold">
+                        {formatCurrencyDisplay(0)}
+                      </Text>
+                    </HStack>
+                  ) : (
+                    <Text>{formatCurrencyDisplay(tax)}</Text>
+                  )}
                 </HStack>
               </VStack>
             </Box>
@@ -202,11 +273,22 @@ export default function CheckoutPage() {
             <Box w="100%" mb={3}>
               <HStack justify="space-between" w="100%">
                 <Heading size="sm">Order total</Heading>
-                <Heading size="sm">$1,470.18</Heading>
+                {paymentMethod === "credit" ? (
+                  <Heading size="sm">{formatCurrencyDisplay(0)}</Heading>
+                ) : (
+                  <Heading size="sm">{formatCurrencyDisplay(total)}</Heading>
+                )}
               </HStack>
+              {paymentMethod === "credit" && (
+                <Flex justify="flex-end" mt={4}>
+                  <Text fontSize="xs" fontWeight="semibold" color="pink.400">
+                    Covered by I Need It
+                  </Text>
+                </Flex>
+              )}
             </Box>
 
-            {paymentMethod === "card" && (
+            {(paymentMethod === "card" || paymentMethod === "credit") && (
               <Button
                 w="100%"
                 colorScheme="blackAlpha"
@@ -389,6 +471,13 @@ export default function CheckoutPage() {
               Select your payment method
             </Heading>
             <HStack spacing={4}>
+              <ShinyButton
+                isSelected={paymentMethod === "credit"}
+                onClick={() => setPaymentMethod("credit")}
+              >
+                Earned Credit
+              </ShinyButton>
+
               <Button
                 variant="outline"
                 display="flex"
@@ -440,37 +529,48 @@ export default function CheckoutPage() {
               </Button>
             </HStack>
 
-            {paymentMethod === "card" && (
-              <Box
-                border="1px solid"
-                borderColor="gray.200"
-                mt={6}
-                p={4}
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-                _hover={{ cursor: "pointer" }}
-              >
-                <Box>
+            {paymentMethod === "card" && selectedCard && (
+              <>
+                <Box
+                  border="1px solid"
+                  borderColor="gray.200"
+                  mt={6}
+                  p={4}
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  onClick={openCardSelectModal}
+                  _hover={{ cursor: "pointer", bg: "gray.50" }}
+                >
                   <HStack spacing={6} align="start">
-                    <Image
-                      src="/assets/logos/visa.png"
-                      alt="Visa Logo"
-                      height="10px"
-                      mt={2}
+                    <Icon
+                      as={
+                        selectedCard.cardType === "Visa"
+                          ? FaCcVisa
+                          : FaCcMastercard
+                      }
+                      boxSize={6}
+                      color="gray.700"
                     />
                     <VStack spacing={1} align="start">
-                      <Text fontSize="sm" fontWeight="bold">
-                        Ending in 0699
+                      <Text fontSize="sm" fontWeight="semibold">
+                        Ending in {selectedCard.last4}
                       </Text>
-                      <Text fontSize="sm" color="gray.600">
-                        Exp. 11/26
+                      <Text fontSize="xs" color="gray.600">
+                        Exp. {selectedCard.expMonth} / {selectedCard.expYear}
                       </Text>
                     </VStack>
                   </HStack>
+                  <ChevronRightIcon boxSize={5} />
                 </Box>
-                <ChevronRightIcon boxSize={5} />
-              </Box>
+
+                <CardSelectModal
+                  isOpen={isCardSelectOpen}
+                  onClose={closeCardSelectModal}
+                  cards={paymentMethods}
+                  onSelect={(card) => setSelectedCard(card)}
+                />
+              </>
             )}
           </Box>
         </VStack>

@@ -18,7 +18,7 @@ export const PurchaseProtection = () => {
   const { isOpen, onToggle } = useDisclosure();
 
   return (
-    <Box borderWidth="1px" borderRadius="md" p={4} bg="white">
+    <Box borderWidth="1px" borderRadius="none" p={4} bg="white">
       <Text fontWeight="bold" fontSize="md" mb={2}>
         I Need It Purchase Protection
       </Text>

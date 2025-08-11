@@ -91,9 +91,10 @@ export default function AddressSelectModal({
                       <Text fontSize="xs" color="gray.600">
                         {address.city}, {address.state} {address.zip}
                       </Text>
-                      <Text fontSize="xs" color="gray.600">
+                      <Text fontSize="xs" color="gray.600" mb={1}>
                         {address.country}
                       </Text>
+                      <Text fontSize="xs">{address.phone}</Text>
                     </Box>
                   </HStack>
                   {idx !== addresses.length - 1 && (

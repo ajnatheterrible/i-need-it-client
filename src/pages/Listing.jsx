@@ -114,7 +114,6 @@ export default function ListingPage() {
         const data = await toggleFavorite(listingId, token, isFavorited);
         setFetchedData({ favorites: data.favorites });
 
-        // Optional: update listing with the newest favorite count from the server
         const updated = data.favorites.find((f) => f._id === listingId);
         if (updated) {
           setListing((prev) =>
@@ -375,6 +374,7 @@ export default function ListingPage() {
                   <VStack w="100%" spacing={2}>
                     <HStack w="100%">
                       <Button
+                        borderRadius="none"
                         colorScheme="blackAlpha"
                         flex="1"
                         onClick={() => {
@@ -389,6 +389,7 @@ export default function ListingPage() {
                     <HStack w="100%">
                       {listing.canOffer && (
                         <Button
+                          borderRadius="none"
                           variant="outline"
                           flex="1"
                           onClick={() => {
@@ -400,6 +401,7 @@ export default function ListingPage() {
                         </Button>
                       )}
                       <Button
+                        borderRadius="none"
                         variant="outline"
                         flex="1"
                         onClick={() => {
