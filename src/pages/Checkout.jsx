@@ -31,7 +31,7 @@ import AffirmSvg from "../../public/assets/logos/AffirmSvg";
 import ShinyButton from "../components/ui/ShinyButton";
 
 import { Link as RouterLink } from "react-router-dom";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useDisclosure } from "@chakra-ui/react";
 
@@ -42,13 +42,16 @@ import { calculateTotal } from "../utils/calculateOrder";
 
 export default function CheckoutPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isPurchaseLoading, setIsPurchaseLoading] = useState(false);
   const [listing, setListing] = useState(null);
 
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [selectedCard, setSelectedCard] = useState(null);
 
+  const navigate = useNavigate();
   const { id } = useParams();
+
   const { isOpen, onOpen, onClose } = useDisclosure();
   const {
     isOpen: isCardSelectOpen,
@@ -65,6 +68,7 @@ export default function CheckoutPage() {
   const { loading: addressesLoading } = useFetchAddresses();
   const addresses = useAuthStore((s) => s.fetchedData?.addresses);
   const paymentMethods = useAuthStore((s) => s.fetchedData?.paymentMethods);
+  const token = useAuthStore((s) => s.token);
 
   const formatPhoneNumber = (phone) => {
     if (!phone) return "";
@@ -84,6 +88,45 @@ export default function CheckoutPage() {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`;
+  };
+
+  const handlePurchase = async () => {
+    if (!token || !selectedAddress || paymentMethod !== "credit") {
+      return;
+    }
+
+    setIsPurchaseLoading(true);
+
+    const taxForServer = Math.round((tax || 0) * 100) / 100;
+
+    try {
+      const res = await fetch("/api/orders/purchase", {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        method: "POST",
+        body: JSON.stringify({
+          shippingAddress: selectedAddress,
+          listingId: id,
+          tax: taxForServer,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to fetch order");
+      }
+
+      const orderId = data.order._id;
+
+      navigate(`/confirmation/${orderId}`);
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setIsPurchaseLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -296,6 +339,13 @@ export default function CheckoutPage() {
                 bg="black"
                 size="lg"
                 borderRadius="none"
+                onClick={() => {
+                  if (paymentMethod === "credit") {
+                    handlePurchase();
+                  }
+                }}
+                isLoading={isPurchaseLoading}
+                isDisabled={!selectedAddress}
               >
                 Confirm Purchase
               </Button>
@@ -309,6 +359,7 @@ export default function CheckoutPage() {
                 bg="black"
                 size="lg"
                 borderRadius="none"
+                isDisabled={!selectedAddress}
               >
                 <Text mr={2}>Continue With</Text>{" "}
                 <KlarnaSvg height="20" color="white" />
@@ -323,6 +374,7 @@ export default function CheckoutPage() {
                 bg="black"
                 size="lg"
                 borderRadius="none"
+                isDisabled={!selectedAddress}
               >
                 <Text mr={2}>Checkout With</Text>{" "}
                 <AffirmSvg height="20" color="white" />

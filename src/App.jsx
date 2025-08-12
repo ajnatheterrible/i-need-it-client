@@ -13,6 +13,7 @@ import Purchases from "./pages/Purchases";
 import SearchResults from "./pages/SearchResults";
 import Listing from "./pages/Listing";
 import Checkout from "./pages/Checkout";
+import ConfirmationPage from "./pages/static/ConfirmationPage";
 import ProfileSettings from "./pages/account/ProfileSettings";
 import Addresses from "./pages/account/Addresses";
 import Sizes from "./pages/account/Sizes";
@@ -83,6 +84,7 @@ export default function App() {
             <Route path="drafts/skeleton" element={<DraftsSkeleton />} />
             <Route path="payments-seller" element={<PaymentsSeller />} />
             <Route path="settings-seller" element={<SellerSettings />} />
+            <Route path="confirmation/:id" element={<ConfirmationPage />} />
           </Route>
 
           <Route path="shop" element={<SearchResults />} />
