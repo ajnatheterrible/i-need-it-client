@@ -40,6 +40,7 @@ import CompleteSignup from "./pages/static/CompleteSignup";
 import ForgotPassword from "./pages/static/ForgotPassword";
 import DraftsSkeleton from "./components/skeletons/DraftsSkeleton";
 import ConfirmEmailChange from "./pages/static/ConfirmEmailChange";
+import OrderDetails from "./pages/OrderDetails";
 
 import posthog from "posthog-js";
 
@@ -85,6 +86,7 @@ export default function App() {
             <Route path="payments-seller" element={<PaymentsSeller />} />
             <Route path="settings-seller" element={<SellerSettings />} />
             <Route path="confirmation/:id" element={<ConfirmationPage />} />
+            <Route path="orders/:orderId" element={<OrderDetails />} />
           </Route>
 
           <Route path="shop" element={<SearchResults />} />
