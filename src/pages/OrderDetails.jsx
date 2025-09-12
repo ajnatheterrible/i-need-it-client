@@ -8,21 +8,36 @@ import {
   Button,
   Image,
   HStack,
-  Link as ChakraLink,
   Grid,
 } from "@chakra-ui/react";
 import { CheckIcon } from "@chakra-ui/icons";
 import { PuffLoader } from "react-spinners";
-import { useParams, Link as RouterLink } from "react-router-dom";
+import { motion } from "framer-motion";
+
+import { useParams, Link as RouterLink, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 
 import Container from "../components/shared/Container";
 import Footer from "../components/layout/Footer";
+
+import useAuthStore from "../store/authStore";
+
 import formatFullDate from "../utils/formatFullDate";
 import useFetchOrder from "../hooks/useFetchOrder";
 
+const MotionFlex = motion(Flex);
+const MotionText = motion(Text);
+const MotionBox = motion(Box);
+const MotionButton = motion(Button);
+
 export default function OrderDetailsPage() {
   const { orderId } = useParams();
+  const navigate = useNavigate();
   const { order, loading, error } = useFetchOrder(orderId);
+
+  const [orderStatus, setOrderStatus] = useState(null);
+
+  const token = useAuthStore((s) => s.token);
 
   const formatPrice = (value) => {
     if (value == null || isNaN(value)) return "$0.00";
@@ -34,9 +49,43 @@ export default function OrderDetailsPage() {
     const val = (s || "").toUpperCase();
     if (val === "DELIVERED") return 2;
     if (val === "SHIPPED") return 0;
-    if (val === "IN_TRANSIT" || val === "INTRANSIT") return 1;
-    return -1;
+    if (val === "IN TRANSIT") return 1;
+    return 0;
   };
+
+  useEffect(() => {
+    if (!loading && (error || !order)) {
+      navigate("/404", { replace: true });
+    }
+  }, [loading, error, order, navigate]);
+
+  useEffect(() => {
+    if (!order || !order.status) return;
+
+    let interval;
+
+    const simulateStatus = async () => {
+      try {
+        const res = await fetch(`/api/orders/${orderId}/simulate`, {
+          method: "PATCH",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+
+        if (data.order.status !== "DELIVERED") {
+          interval = setTimeout(simulateStatus, 3000);
+        }
+
+        setOrderStatus(data.order.status);
+      } catch (err) {
+        console.error("Simulation failed", err);
+      }
+    };
+
+    simulateStatus();
+
+    return () => clearTimeout(interval);
+  }, [order]);
 
   if (loading) {
     return (
@@ -51,16 +100,28 @@ export default function OrderDetailsPage() {
       </Box>
     );
   }
-  if (error) return <Text color="red.500">{error}</Text>;
-  if (!order) return null;
+
+  if (error || !order) {
+    return null;
+  }
 
   const listing = order?.listing || order?.listingSnapshot || {};
   const { shippingAddress, createdAt, status, seller, price } = order;
   const { listingPrice, shipping, tax, total } = price || {};
 
-  const currentStep = stepIndexFromStatus(status);
-  const shippedAt = order?.shippedAt || createdAt;
-  const deliveredAt = order?.deliveredAt || null;
+  const currentStep = stepIndexFromStatus(orderStatus || status);
+
+  const shippedAt =
+    order.statusHistory.find((h) => h.status === "SHIPPED")?.updatedAt || null;
+
+  const deliveredAt =
+    order.statusHistory.find((h) => h.status === "DELIVERED")?.updatedAt ||
+    null;
+
+  const totalSteps = 3;
+  const startOffsetPct = 100 / (totalSteps * 2);
+  const widthPct =
+    (Math.max(0, Math.min(currentStep, totalSteps - 1)) * 100) / totalSteps;
 
   const thumb =
     listing?.thumbnail ||
@@ -70,269 +131,308 @@ export default function OrderDetailsPage() {
   return (
     <>
       <Container>
-        <Heading mb={6} mt={10} size="lg">
-          Order details
-        </Heading>
-
-        <Grid
-          templateColumns={{ base: "1fr", lg: "2fr 1.05fr" }}
-          gap={{ base: 10, lg: 24 }}
-          alignItems="start"
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.25 }}
         >
-          {/* LEFT MAIN SECTION */}
-          <Box minW={0}>
-            <Flex
-              p={4}
-              bg="#fafafa"
-              justify="space-between"
-              align="center"
-              mb={6}
-              gap={4}
-            >
-              <HStack align="start" spacing={4}>
-                <Image
-                  src={thumb}
-                  alt={listing?.title || "Listing thumbnail"}
-                  boxSize="100px"
-                  objectFit="cover"
-                />
-                <VStack align="start" spacing={1} mb={1}>
-                  <Text fontSize="xs" color="gray.600">
-                    Sold on {formatFullDate(createdAt)}
-                  </Text>
-                  <Text fontWeight="bold" fontSize="sm">
-                    {listing?.designer?.name || listing?.designer || "—"}
-                  </Text>
-                  <Text fontSize="sm" color="gray.700">
-                    {listing?.title || "—"}
-                  </Text>
-                  <Text mt={1} fontWeight="semibold" fontSize="xs">
-                    {formatPrice(listingPrice)}
-                  </Text>
-                </VStack>
-              </HStack>
-              <Button
-                as={RouterLink}
-                to={`/listing/${listing?._id || order?.listing}`}
-                size="xs"
-                variant="outline"
-                borderRadius="none"
+          <Heading mb={6} mt={10} size="lg">
+            Order details
+          </Heading>
+
+          <Grid
+            templateColumns={{ base: "1fr", lg: "2fr 1.05fr" }}
+            gap={{ base: 10, lg: 24 }}
+            alignItems="start"
+          >
+            <Box minW={0}>
+              <Flex
+                p={4}
+                bg="#fafafa"
+                justify="space-between"
+                align="center"
+                mb={6}
+                gap={4}
               >
-                View Listing
-              </Button>
-            </Flex>
-
-            <Box py={4} mb={6}>
-              <Text fontWeight="bold" mb={4}>
-                Delivery info
-              </Text>
-
-              <Box position="relative" px={2} py={2}>
-                <Box
-                  position="absolute"
-                  top="20px"
-                  left="calc(100% / 6)"
-                  right="calc(100% / 6)"
-                  height="2px"
-                  bg="green.500"
-                  zIndex={0}
-                />
-
-                <HStack justify="space-between" position="relative" zIndex={1}>
-                  {[
-                    {
-                      label: "Shipped",
-                      date: shippedAt,
-                      isActive: currentStep >= 0,
-                    },
-                    {
-                      label: "In Transit",
-                      date: null,
-                      isActive: currentStep >= 1,
-                      renderBelow: () =>
-                        order?.trackingNumber || order?.trackingUrl ? (
-                          <ChakraLink
-                            href={
-                              order?.trackingUrl ||
-                              `https://parcelsapp.com/en/tracking/${order?.trackingNumber}`
-                            }
-                            isExternal
-                            fontSize="sm"
-                            textDecoration="underline"
-                          >
-                            View Tracking
-                          </ChakraLink>
-                        ) : null,
-                    },
-                    {
-                      label: "Delivered",
-                      date: deliveredAt,
-                      isActive: currentStep >= 2,
-                    },
-                  ].map((step, idx) => (
-                    <VStack
-                      key={idx}
-                      spacing={1}
-                      flex="1"
-                      minW="100px"
-                      align="center"
-                    >
-                      <Flex
-                        align="center"
-                        justify="center"
-                        w="28px"
-                        h="28px"
-                        bg={step.isActive ? "green.600" : "gray.300"}
-                        borderRadius="full"
-                      >
-                        <CheckIcon boxSize="14px" color="white" />
-                      </Flex>
-                      <Text
-                        fontWeight={"bold"}
-                        color={step.isActive ? "green.700" : "gray.400"}
-                        mt={1}
-                        mb={1}
-                      >
-                        {step.label}
-                      </Text>
-                      <Box minH="20px">
-                        {typeof step.renderBelow === "function" &&
-                          step.renderBelow()}
-                      </Box>
-                      <Box minH="20px">
-                        {step.date && (
-                          <Text fontSize="xs" color="gray.500">
-                            {formatFullDate(step.date)}
-                          </Text>
-                        )}
-                      </Box>
-                    </VStack>
-                  ))}
+                <HStack align="start" spacing={4}>
+                  <Image
+                    src={thumb}
+                    alt={listing?.title || "Listing thumbnail"}
+                    boxSize="100px"
+                    objectFit="cover"
+                  />
+                  <VStack align="start" spacing={1} mb={1}>
+                    <Text fontSize="xs" color="gray.600">
+                      Sold on {formatFullDate(createdAt)}
+                    </Text>
+                    <Text fontWeight="bold" fontSize="sm">
+                      {listing?.designer?.name || listing?.designer || "—"}
+                    </Text>
+                    <Text fontSize="sm" color="gray.700">
+                      {listing?.title || "—"}
+                    </Text>
+                    <Text mt={1} fontWeight="semibold" fontSize="xs">
+                      {formatPrice(listingPrice)}
+                    </Text>
+                  </VStack>
                 </HStack>
-              </Box>
-
-              <Divider mt={6} />
-            </Box>
-
-            <Grid
-              templateColumns={{ base: "1fr", lg: "1fr 1fr" }}
-              gap={{ base: 10, lg: 10 }}
-              alignItems="start"
-            >
-              <Box>
-                <Text fontWeight="bold" mb={2}>
-                  Shipping to
-                </Text>
-                <VStack align="start" spacing={0} fontSize="sm">
-                  <Text>{shippingAddress?.fullName || "—"}</Text>
-                  <Text>{shippingAddress?.line1 || "—"}</Text>
-                  {shippingAddress?.line2 && (
-                    <Text>{shippingAddress.line2}</Text>
-                  )}
-                  <Text fontSize="xs" color="gray.600">
-                    {shippingAddress?.city || "—"}
-                    {shippingAddress?.state ? `, ${shippingAddress.state}` : ""}
-                    {shippingAddress?.zip ? ` ${shippingAddress.zip}` : ""}
-                  </Text>
-                  <Text fontSize="xs" color="gray.600">
-                    {shippingAddress?.country || ""}
-                  </Text>
-                </VStack>
-              </Box>
-
-              <Box>
-                <Text fontWeight="bold" mb={2}>
-                  Payment
-                </Text>
-                <Text fontSize="sm">I Need It earned credit</Text>
-              </Box>
-            </Grid>
-
-            <Divider mt={6} mb={6} />
-            <VStack align="start" spacing={2}>
-              <Text fontWeight="bold" mb={2}>
-                Listing ID
-              </Text>
-              <Text fontSize="sm">{listing?._id}</Text>
-            </VStack>
-
-            <Divider mt={6} mb={6} />
-            <VStack align="start" spacing={2}>
-              <Text textAlign="center" fontSize="sm" w="full">
-                This purchase may be covered by I Need It's Purchase Protection
-                program
-              </Text>
-              <Text
-                textAlign="center"
-                fontSize="sm"
-                w="full"
-                textDecoration="underline"
-              >
-                {" "}
-                Learn more
-              </Text>
-            </VStack>
-          </Box>
-
-          <Box w="100%" ml="auto" p={4} bg="white">
-            <Text fontWeight="bold" mb={2}>
-              Seller
-            </Text>
-            <VStack align="start" spacing={2}>
-              <Text textDecoration="underline">{seller?.username || "—"}</Text>
-              <Text color="gray.600" fontSize="sm">
-                {order?.shippingFrom
-                  ? `Ships from ${order.shippingFrom}`
-                  : "Ships from"}
-              </Text>
-            </VStack>
-
-            <Box py={4} mt={10}>
-              <Text fontWeight="bold" mb={3}>
-                Receipt
-              </Text>
-              <VStack spacing={1} align="stretch" fontSize="sm">
-                <Flex justify="space-between">
-                  <Text color="gray.600">Listing price</Text>
-                  <Text fontWeight="semibold">{formatPrice(listingPrice)}</Text>
-                </Flex>
-                <Flex justify="space-between">
-                  <Text color="gray.600">Shipping</Text>
-                  <Text fontWeight="semibold">{formatPrice(shipping)}</Text>
-                </Flex>
-                <Flex justify="space-between">
-                  <Text color="gray.600">Tax</Text>
-                  <Text fontWeight="semibold">{formatPrice(tax)}</Text>
-                </Flex>
-                <Flex justify="space-between" fontWeight="semibold" mt={2}>
-                  <Text fontWeight="bold" fontSize="md">
-                    Order total
-                  </Text>
-                  <Text fontSize="md" fontWeight="bold">
-                    {formatPrice(total)}
-                  </Text>
-                </Flex>
-              </VStack>
-              <VStack spacing={2} mt={16} align="stretch">
                 <Button
-                  bg="black"
-                  color="white"
-                  _hover={{ bg: "gray.800" }}
-                  fontWeight="bold"
+                  as={RouterLink}
+                  to={`/listing/${listing?._id || order?.listing}`}
+                  size="xs"
+                  variant="outline"
                   borderRadius="none"
                 >
-                  View Tracking
+                  View Listing
                 </Button>
-                <Button variant="outline" borderRadius="none" fontWeight="bold">
-                  Edit Feedback
-                </Button>
-                <Button variant="outline" borderRadius="none" fontWeight="bold">
-                  Resell
-                </Button>
+              </Flex>
+
+              <Box py={4} mb={6}>
+                <Text fontWeight="bold" mb={4}>
+                  Delivery info
+                </Text>
+
+                <Box position="relative" px={2} py={2}>
+                  <MotionBox
+                    position="absolute"
+                    top="20px"
+                    left={`${startOffsetPct}%`}
+                    height="2px"
+                    bg="green.500"
+                    initial={{ width: "0%" }}
+                    animate={{ width: `${widthPct}%` }}
+                    transition={{ duration: 0.6, ease: "easeInOut" }}
+                    zIndex={0}
+                  />
+
+                  <HStack
+                    justify="space-between"
+                    position="relative"
+                    zIndex={1}
+                  >
+                    {[
+                      {
+                        label: "Shipped",
+                        date: shippedAt,
+                        isActive: currentStep >= 0,
+                      },
+                      {
+                        label: "In Transit",
+                        date: null,
+                        isActive: currentStep >= 1,
+                      },
+                      {
+                        label: "Delivered",
+                        date: deliveredAt,
+                        isActive: currentStep >= 2,
+                      },
+                    ].map((step, idx) => (
+                      <VStack
+                        key={idx}
+                        spacing={1}
+                        flex="1"
+                        minW="100px"
+                        align="center"
+                      >
+                        <MotionFlex
+                          align="center"
+                          justify="center"
+                          w="28px"
+                          h="28px"
+                          borderRadius="full"
+                          initial={{ scale: 0.5, opacity: 0 }}
+                          animate={{
+                            scale: step.isActive ? 1 : 0.8,
+                            opacity: step.isActive ? 1 : 0.5,
+                            backgroundColor: step.isActive
+                              ? "rgb(22, 163, 74)"
+                              : "rgb(209, 213, 219)",
+                          }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 500,
+                            damping: 20,
+                          }}
+                        >
+                          <CheckIcon boxSize="14px" color="white" />
+                        </MotionFlex>
+
+                        <MotionText
+                          fontWeight="bold"
+                          mt={1}
+                          mb={1}
+                          initial={{ opacity: 0 }}
+                          animate={{
+                            opacity: step.isActive ? 1 : 0.5,
+                            color: step.isActive
+                              ? "rgb(21, 128, 61)"
+                              : "#9CA3AF",
+                          }}
+                          transition={{
+                            duration: 0.4,
+                            delay: step.isActive ? 0.2 : 0,
+                          }}
+                        >
+                          {step.label}
+                        </MotionText>
+
+                        <Box minH="20px">
+                          {step.date && (
+                            <Text fontSize="xs" color="gray.500">
+                              {formatFullDate(step.date)}
+                            </Text>
+                          )}
+                        </Box>
+                      </VStack>
+                    ))}
+                  </HStack>
+                </Box>
+
+                <Divider mt={6} />
+              </Box>
+
+              <Grid
+                templateColumns={{ base: "1fr", lg: "1fr 1fr" }}
+                gap={{ base: 10, lg: 10 }}
+                alignItems="start"
+              >
+                <Box>
+                  <Text fontWeight="bold" mb={2}>
+                    Shipping to
+                  </Text>
+                  <VStack align="start" spacing={0} fontSize="sm">
+                    <Text>{shippingAddress?.fullName || "—"}</Text>
+                    <Text>{shippingAddress?.line1 || "—"}</Text>
+                    {shippingAddress?.line2 && (
+                      <Text>{shippingAddress.line2}</Text>
+                    )}
+                    <Text fontSize="xs" color="gray.600">
+                      {shippingAddress?.city || "—"}
+                      {shippingAddress?.state
+                        ? `, ${shippingAddress.state}`
+                        : ""}
+                      {shippingAddress?.zip ? ` ${shippingAddress.zip}` : ""}
+                    </Text>
+                    <Text fontSize="xs" color="gray.600">
+                      {shippingAddress?.country || ""}
+                    </Text>
+                  </VStack>
+                </Box>
+
+                <Box>
+                  <Text fontWeight="bold" mb={2}>
+                    Payment
+                  </Text>
+                  <Text fontSize="sm">I Need It earned credit</Text>
+                </Box>
+              </Grid>
+
+              <Divider mt={6} mb={6} />
+              <VStack align="start" spacing={2}>
+                <Text fontWeight="bold" mb={2}>
+                  Listing ID
+                </Text>
+                <Text fontSize="sm">{listing?._id}</Text>
+              </VStack>
+
+              <Divider mt={6} mb={6} />
+              <VStack align="start" spacing={2}>
+                <Text textAlign="center" fontSize="sm" w="full">
+                  This purchase may be covered by I Need It's Purchase
+                  Protection program
+                </Text>
+                <Text
+                  textAlign="center"
+                  fontSize="sm"
+                  w="full"
+                  textDecoration="underline"
+                >
+                  Learn more
+                </Text>
               </VStack>
             </Box>
-          </Box>
-        </Grid>
+
+            <Box w="100%" ml="auto" p={4} bg="white">
+              <Text fontWeight="bold" mb={2}>
+                Seller
+              </Text>
+              <VStack align="start" spacing={2}>
+                <Text textDecoration="underline">
+                  {seller?.username || "—"}
+                </Text>
+                <Text color="gray.600" fontSize="sm">
+                  {order?.shippingFrom
+                    ? `Ships from ${order.shippingFrom}`
+                    : "Ships from"}
+                </Text>
+              </VStack>
+
+              <Box py={4} mt={10}>
+                <Text fontWeight="bold" mb={3}>
+                  Receipt
+                </Text>
+                <VStack spacing={1} align="stretch" fontSize="sm">
+                  <Flex justify="space-between">
+                    <Text color="gray.600">Listing price</Text>
+                    <Text fontWeight="semibold">
+                      {formatPrice(listingPrice)}
+                    </Text>
+                  </Flex>
+                  <Flex justify="space-between">
+                    <Text color="gray.600">Shipping</Text>
+                    <Text fontWeight="semibold">{formatPrice(shipping)}</Text>
+                  </Flex>
+                  <Flex justify="space-between">
+                    <Text color="gray.600">Tax</Text>
+                    <Text fontWeight="semibold">{formatPrice(tax)}</Text>
+                  </Flex>
+                  <Flex justify="space-between" fontWeight="semibold" mt={2}>
+                    <Text fontWeight="bold" fontSize="md">
+                      Order total
+                    </Text>
+                    <Text fontSize="md" fontWeight="bold">
+                      {formatPrice(total)}
+                    </Text>
+                  </Flex>
+                </VStack>
+
+                <VStack spacing={2} mt={16} align="stretch">
+                  <Button
+                    bg="black"
+                    color="white"
+                    _hover={{ bg: "gray.800" }}
+                    fontWeight="bold"
+                    borderRadius="none"
+                  >
+                    View Tracking
+                  </Button>
+
+                  <MotionButton
+                    variant="outline"
+                    borderRadius="none"
+                    fontWeight="bold"
+                    initial={false}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                  >
+                    Edit Feedback
+                  </MotionButton>
+
+                  <MotionButton
+                    variant="outline"
+                    borderRadius="none"
+                    fontWeight="bold"
+                    initial={false}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.5, ease: "easeOut", delay: 0.15 }}
+                  >
+                    Resell
+                  </MotionButton>
+                </VStack>
+              </Box>
+            </Box>
+          </Grid>
+        </motion.div>
       </Container>
       <Footer />
     </>
