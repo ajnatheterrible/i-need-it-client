@@ -21,9 +21,15 @@ const navLinks = [
 const menswearItems = Object.entries(categoryMap["Menswear"]).map(
   ([heading, items]) => ({ heading, items })
 );
-const womenswearItems = Object.entries(categoryMap["Womenswear"]).map(
-  ([heading, items]) => ({ heading, items })
-);
+const womenswearItems = Object.entries(categoryMap["Womenswear"])
+  .filter(([heading]) => heading !== "Jewelry")
+  .map(([heading, items]) => ({
+    heading,
+    items:
+      heading === "Bags & Luggage"
+        ? items.filter((item) => item !== "Messengers & Satchels")
+        : items,
+  }));
 
 export default function NavSubMenu() {
   const [activeMenu, setActiveMenu] = useState(null);
