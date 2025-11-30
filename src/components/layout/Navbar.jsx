@@ -38,7 +38,10 @@ export default function Navbar() {
   const query = searchParams.get("query");
 
   const user = useAuthStore((s) => s.user);
+  const token = useAuthStore((s) => s.token);
   const logout = useAuthStore((s) => s.logout);
+  const hasUnread = useAuthStore((s) => s.hasUnread);
+  const setHasUnread = useAuthStore((s) => s.setHasUnread);
 
   useEffect(() => {
     setSearchTerm("");
@@ -58,6 +61,25 @@ export default function Navbar() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!token) return;
+
+    const fetchUnread = async () => {
+      try {
+        const res = await fetch("/api/messages/unread-count", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        setHasUnread((data.unreadCount || 0) > 0);
+      } catch {}
+    };
+
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 30000);
+    return () => clearInterval(interval);
+  }, [token, setHasUnread]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -145,13 +167,27 @@ export default function Navbar() {
           </Button>
 
           <HStack spacing={4} position="relative">
-            <IconButton
-              icon={<FaRegCommentDots />}
-              aria-label="Messages"
-              variant="ghost"
-              as={RouterLink}
-              to="/messages"
-            />
+            <Box position="relative">
+              <IconButton
+                icon={<FaRegCommentDots />}
+                aria-label="Messages"
+                variant="ghost"
+                as={RouterLink}
+                to="/messages"
+              />
+              {hasUnread && (
+                <Box
+                  position="absolute"
+                  top="10px"
+                  right="10px"
+                  w="8px"
+                  h="8px"
+                  bg="red.500"
+                  borderRadius="full"
+                />
+              )}
+            </Box>
+
             <IconButton
               icon={<FaRegHeart />}
               aria-label="Favorites"

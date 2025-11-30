@@ -6,6 +6,7 @@ const useAuthStore = create((set) => ({
   isLoggedIn: false,
   hasRefreshed: false,
   fetchedData: {},
+  hasUnread: false,
 
   setFetchedData: (newFetchedData) =>
     set((s) => ({
@@ -14,6 +15,8 @@ const useAuthStore = create((set) => ({
         ...newFetchedData,
       },
     })),
+
+  setHasUnread: (flag) => set({ hasUnread: flag }),
 
   login: (userData, newToken) => {
     set((s) => ({
@@ -39,6 +42,7 @@ const useAuthStore = create((set) => ({
       isLoggedIn: false,
       hasRefreshed: true,
       fetchedData: {},
+      hasUnread: false,
     });
   },
 
@@ -69,6 +73,7 @@ const useAuthStore = create((set) => ({
         isLoggedIn: false,
         hasRefreshed: true,
         fetchedData: {},
+        hasUnread: false,
       });
     }
   },

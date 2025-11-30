@@ -18,7 +18,7 @@ import {
 import { WarningIcon } from "@chakra-ui/icons";
 import { FaHeart, FaRegHeart } from "react-icons/fa";
 
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link as RouterLink, useParams, useNavigate } from "react-router-dom";
 
 import useFetchFavorites from "../hooks/useFetchFavorites";
@@ -31,6 +31,7 @@ import KlarnaAffirmButton from "../components/ui/KlarnaAffirmButton";
 import KlarnaAffirmModal from "../components/ui/KlarnaAffirmModal";
 import OfferModal from "../components/modals/OfferModal";
 import MessageModal from "../components/modals/MessageModal";
+import BroadcastOfferModal from "../components/modals/BroadcastOfferModal";
 import ListingSkeleton from "../components/skeletons/ListingSkeleton";
 
 import useAuthStore from "../store/authStore";
@@ -52,6 +53,8 @@ export default function ListingPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isImageOpen, setIsImageOpen] = useState(false);
+  const [activeSellerOffer, setActiveSellerOffer] = useState(null);
+  const [timeLeft, setTimeLeft] = useState(null);
 
   const isViewerSeller =
     isLoggedIn && user?.username === listing?.seller?.username;
@@ -63,7 +66,6 @@ export default function ListingPage() {
         const res = await fetch(`/api/listings/${id}`);
         if (!res.ok) throw new Error("Listing not found");
         const data = await res.json();
-
         setListing(data);
       } catch {
         navigate("/404");
@@ -72,7 +74,59 @@ export default function ListingPage() {
       }
     };
     fetchListing();
-  }, [id]);
+  }, [id, navigate]);
+
+  useEffect(() => {
+    const fetchActiveOffer = async () => {
+      if (!token || !isLoggedIn || !listing || isViewerSeller) {
+        setActiveSellerOffer(null);
+        return;
+      }
+
+      try {
+        const res = await fetch(
+          `/api/offers/active-seller-offer/${listing._id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!res.ok) {
+          setActiveSellerOffer(null);
+          return;
+        }
+
+        const data = await res.json();
+        setActiveSellerOffer(data.offer || null);
+      } catch {
+        setActiveSellerOffer(null);
+      }
+    };
+
+    fetchActiveOffer();
+  }, [token, isLoggedIn, listing, isViewerSeller]);
+
+  const offerExpiresAt = activeSellerOffer?.expiresAt;
+
+  useEffect(() => {
+    if (!offerExpiresAt) {
+      setTimeLeft(null);
+      return;
+    }
+
+    const expiresAtMs = new Date(offerExpiresAt).getTime();
+
+    const update = () => {
+      const diff = expiresAtMs - Date.now();
+      setTimeLeft(diff > 0 ? diff : 0);
+    };
+
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [offerExpiresAt]);
 
   useFetchFavorites();
 
@@ -164,6 +218,12 @@ export default function ListingPage() {
     onClose: onKlarnaClose,
   } = useDisclosure();
 
+  const {
+    isOpen: isBroadcastOpen,
+    onOpen: onBroadcastOpen,
+    onClose: onBroadcastClose,
+  } = useDisclosure();
+
   const rotateNext = () => {
     if (listing.images.length > 1) {
       setActiveIndex((prev) => (prev + 1) % listing.images.length);
@@ -202,6 +262,24 @@ export default function ListingPage() {
   };
 
   const handleGuestAction = () => onOpenAuthModal("register");
+
+  const formatOfferCountdown = (ms) => {
+    if (ms == null) return "";
+    const totalSeconds = Math.floor(ms / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    const hh = String(hours).padStart(2, "0");
+    const mm = String(minutes).padStart(2, "0");
+    const ss = String(seconds).padStart(2, "0");
+    return `${hh}:${mm}:${ss}`;
+  };
+
+  const basePrice = listing?.price || 0;
+  const offerPrice = activeSellerOffer
+    ? activeSellerOffer.amount_cents / 100
+    : null;
+  const displayPrice = offerPrice ?? basePrice;
 
   return (
     <>
@@ -306,7 +384,6 @@ export default function ListingPage() {
                         handleFavorite(listing._id);
                       }}
                     />
-
                     <Text fontSize="xs">{listing?.favoritesCount}</Text>
                   </VStack>
                 </HStack>
@@ -334,31 +411,72 @@ export default function ListingPage() {
                 </VStack>
 
                 <Box>
-                  <HStack spacing={2}>
-                    <Text fontSize="2xl" fontWeight="bold">
-                      ${listing?.price?.toLocaleString()}
-                    </Text>
-                    {listing?.originalPrice && listing?.price && (
+                  {activeSellerOffer ? (
+                    <>
+                      <HStack spacing={3} align="baseline">
+                        <Text
+                          fontSize="2xl"
+                          fontWeight="semibold"
+                          color="gray.400"
+                          sx={{
+                            textDecoration: "line-through",
+                            textDecorationThickness: "2px",
+                          }}
+                        >
+                          ${basePrice.toLocaleString()}
+                        </Text>
+                        <Text
+                          fontSize="2xl"
+                          fontWeight="bold"
+                          color="green.500"
+                        >
+                          ${displayPrice.toLocaleString()}
+                        </Text>
+                      </HStack>
                       <Text
-                        fontSize="2xl"
+                        fontSize="xs"
+                        color="green.600"
                         fontWeight="semibold"
-                        color="gray.400"
-                        sx={{
-                          textDecoration: "line-through",
-                          textDecorationThickness: "2px",
-                        }}
+                        mt={1}
                       >
-                        ${listing?.originalPrice?.toLocaleString()}
+                        You received an offer
+                        {timeLeft !== null && (
+                          <> · Expires in {formatOfferCountdown(timeLeft)}</>
+                        )}
                       </Text>
-                    )}
+                    </>
+                  ) : (
+                    <HStack spacing={2}>
+                      <Text fontSize="2xl" fontWeight="bold">
+                        ${displayPrice.toLocaleString()}
+                      </Text>
 
-                    {listing?.originalPrice && listing?.price && (
-                      <Text fontSize="sm" color="gray.500" fontWeight="medium">
-                        {getPercentOff(listing.originalPrice, listing.price)}%
-                        off
-                      </Text>
-                    )}
-                  </HStack>
+                      {listing?.originalPrice && listing?.price && (
+                        <Text
+                          fontSize="2xl"
+                          fontWeight="semibold"
+                          color="gray.400"
+                          sx={{
+                            textDecoration: "line-through",
+                            textDecorationThickness: "2px",
+                          }}
+                        >
+                          ${listing?.originalPrice?.toLocaleString()}
+                        </Text>
+                      )}
+
+                      {listing?.originalPrice && listing?.price && (
+                        <Text
+                          fontSize="sm"
+                          color="gray.500"
+                          fontWeight="medium"
+                        >
+                          {getPercentOff(listing.originalPrice, listing.price)}%
+                          off
+                        </Text>
+                      )}
+                    </HStack>
+                  )}
 
                   <Text fontSize="sm">+ $9 Shipping — US to United States</Text>
                 </Box>
@@ -366,7 +484,7 @@ export default function ListingPage() {
                 {!isViewerSeller && (
                   <KlarnaAffirmButton
                     onOpen={onKlarnaOpen}
-                    price={listing.price}
+                    price={displayPrice}
                   />
                 )}
 
@@ -425,7 +543,11 @@ export default function ListingPage() {
                     >
                       Edit
                     </Button>
-                    <Button w="100%" variant="outline">
+                    <Button
+                      w="100%"
+                      variant="outline"
+                      onClick={onBroadcastOpen}
+                    >
                       Send Offer
                     </Button>
                     <Button w="100%" variant="outline">
@@ -571,14 +693,28 @@ export default function ListingPage() {
         </Container>
       )}
 
-      <OfferModal isOpen={isOfferOpen} onClose={onOfferClose} />
-      <MessageModal isOpen={isMessageOpen} onClose={onMessageClose} />
+      <OfferModal
+        isOpen={isOfferOpen}
+        onClose={onOfferClose}
+        listing={listing}
+        mode="listing"
+      />
+      <MessageModal
+        isOpen={isMessageOpen}
+        onClose={onMessageClose}
+        listingId={listing?._id}
+      />
+      <BroadcastOfferModal
+        isOpen={isBroadcastOpen}
+        onClose={onBroadcastClose}
+        listing={listing}
+      />
 
       {listing?.price && (
         <KlarnaAffirmModal
           isOpen={isKlarnaOpen}
           onClose={onKlarnaClose}
-          price={listing.price}
+          price={displayPrice}
         />
       )}
 

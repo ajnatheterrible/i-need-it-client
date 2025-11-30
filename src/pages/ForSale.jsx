@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Box,
   Grid,
@@ -5,15 +6,14 @@ import {
   Text,
   VStack,
   HStack,
-  Select,
   SimpleGrid,
   Button,
   Image,
   Icon,
+  useDisclosure,
 } from "@chakra-ui/react";
 import { FaRegHeart } from "react-icons/fa";
 import { motion } from "framer-motion";
-
 import { Link as RouterLink } from "react-router-dom";
 
 import Container from "../components/shared/Container";
@@ -21,14 +21,27 @@ import Footer from "../components/layout/Footer";
 import SellerSidebar from "../components/sidebars/SellerSidebar";
 import SellerProfileHeader from "../components/profile/SellerProfileHeader";
 import ForSaleSkeleton from "../components/skeletons/ForSaleSkeleton";
+import BroadcastOfferModal from "../components/modals/BroadcastOfferModal";
 
 import useAuthStore from "../store/authStore";
 import useFetchForSale from "../hooks/useFetchForSale";
 import getTimestamp from "../utils/getTimestamp";
 
 export default function ForSale() {
-  const { loading, error } = useFetchForSale();
+  const { loading } = useFetchForSale();
   const forSale = useAuthStore((s) => s.fetchedData?.forSale);
+
+  const {
+    isOpen: isOfferOpen,
+    onOpen: onOfferOpen,
+    onClose: onOfferClose,
+  } = useDisclosure();
+  const [selectedListing, setSelectedListing] = useState(null);
+
+  const openOfferModal = (listing) => {
+    setSelectedListing(listing);
+    onOfferOpen();
+  };
 
   return (
     <>
@@ -49,7 +62,7 @@ export default function ForSale() {
 
                 {loading ? (
                   <ForSaleSkeleton />
-                ) : !forSale ? (
+                ) : !forSale?.length ? (
                   <Box
                     as={motion.div}
                     w="full"
@@ -66,14 +79,14 @@ export default function ForSale() {
                 ) : (
                   <SimpleGrid
                     as={motion.div}
-                    columns={3}
+                    columns={[1, 2, 3]}
                     spacing={6}
                     w="full"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.3 }}
                   >
-                    {forSale?.map((item) => (
+                    {forSale.map((item) => (
                       <Box key={item._id} overflow="hidden" mb={6}>
                         <HStack align="start" spacing={0}>
                           <Box
@@ -163,6 +176,7 @@ export default function ForSale() {
                             borderRadius="none"
                             fontSize="xs"
                             w="100%"
+                            onClick={() => openOfferModal(item)}
                           >
                             Send Offer
                           </Button>
@@ -176,6 +190,15 @@ export default function ForSale() {
           </Grid>
         </VStack>
       </Container>
+
+      {selectedListing && (
+        <BroadcastOfferModal
+          isOpen={isOfferOpen}
+          onClose={onOfferClose}
+          listing={selectedListing}
+        />
+      )}
+
       <Footer />
     </>
   );
