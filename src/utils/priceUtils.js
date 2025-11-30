@@ -19,3 +19,10 @@ export const validatePrice = (value) => {
 
   return { isValid: true, error: "" };
 };
+
+export const formatCentsToDollars = (cents = 0) => {
+  return `$${(cents / 100).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+};

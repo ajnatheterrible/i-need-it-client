@@ -44,6 +44,7 @@ export default function CheckoutPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isPurchaseLoading, setIsPurchaseLoading] = useState(false);
   const [listing, setListing] = useState(null);
+  const [activeSellerOffer, setActiveSellerOffer] = useState(null);
 
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState("card");
@@ -130,15 +131,39 @@ export default function CheckoutPage() {
   };
 
   useEffect(() => {
-    const fetchListing = async () => {
+    const fetchListingAndOffer = async () => {
       setIsLoading(true);
       try {
         const res = await fetch(`/api/listings/${id}`);
         if (!res.ok) throw new Error("Listing not found");
         const data = await res.json();
         setListing(data);
+
+        if (token) {
+          try {
+            const offerRes = await fetch(
+              `/api/offers/active-seller-offer/${data._id}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+            if (offerRes.ok) {
+              const offerData = await offerRes.json();
+              setActiveSellerOffer(offerData.offer || null);
+            } else {
+              setActiveSellerOffer(null);
+            }
+          } catch {
+            setActiveSellerOffer(null);
+          }
+        } else {
+          setActiveSellerOffer(null);
+        }
       } catch (err) {
         console.log(err);
+        setActiveSellerOffer(null);
       } finally {
         setIsLoading(false);
       }
@@ -151,11 +176,16 @@ export default function CheckoutPage() {
       }
     };
 
-    fetchListing();
+    fetchListingAndOffer();
     setDefaultAddress();
-  }, [id, addressesLoading, addresses]);
+  }, [id, addressesLoading, addresses, token]);
 
-  const price = listing?.price || 0;
+  const basePrice = listing?.price || 0;
+  const offerPrice = activeSellerOffer
+    ? activeSellerOffer.amount_cents / 100
+    : null;
+  const price = offerPrice ?? basePrice;
+
   const { tax, shipping, total, totalInCents } = calculateTotal(price);
 
   useEffect(() => {
@@ -251,14 +281,14 @@ export default function CheckoutPage() {
                   {paymentMethod === "credit" ? (
                     <HStack spacing={2}>
                       <Text as="s" color="gray.500">
-                        {formatCurrencyDisplay(listing?.price)}
+                        {formatCurrencyDisplay(price)}
                       </Text>
                       <Text fontWeight="semibold">
                         {formatCurrencyDisplay(0)}
                       </Text>
                     </HStack>
                   ) : (
-                    <Text>{formatCurrencyDisplay(listing?.price)}</Text>
+                    <Text>{formatCurrencyDisplay(price)}</Text>
                   )}
                 </HStack>
 
@@ -322,9 +352,16 @@ export default function CheckoutPage() {
                   <Heading size="sm">{formatCurrencyDisplay(total)}</Heading>
                 )}
               </HStack>
+              {activeSellerOffer && paymentMethod !== "credit" && (
+                <Flex justify="flex-end" mt={1}>
+                  <Text fontSize="xs" fontWeight="semibold" color="green.500">
+                    Private offer price applied
+                  </Text>
+                </Flex>
+              )}
               {paymentMethod === "credit" && (
                 <Flex justify="flex-end" mt={4}>
-                  <Text fontSize="xs" fontWeight="semibold" color="pink.400">
+                  <Text fontSize="xs" fontWeight="semibold" color="gray.500">
                     Covered by I Need It
                   </Text>
                 </Flex>

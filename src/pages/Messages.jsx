@@ -1,48 +1,56 @@
-import {
-  Box,
-  Grid,
-  GridItem,
-  Text,
-  VStack,
-  HStack,
-  Avatar,
-  Divider,
-  useColorModeValue,
-  Button,
-} from "@chakra-ui/react";
-import { useState } from "react";
+import { Box, Grid, GridItem, Text, VStack, Spinner } from "@chakra-ui/react";
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import Container from "../components/shared/Container";
 import Footer from "../components/layout/Footer";
 import AccountSidebar from "../components/sidebars/AccountSidebar";
+import useAuthStore from "../store/authStore";
+import Thread from "../components/ui/Thread";
 
 export default function Messages() {
   const [view, setView] = useState("buy");
-  const [expandedId, setExpandedId] = useState(null);
+  const [threads, setThreads] = useState({ buy: [], sell: [] });
+  const [loading, setLoading] = useState(false);
 
-  const activeBg = useColorModeValue("black", "white");
-  const activeColor = useColorModeValue("white", "black");
-  const inactiveBg = useColorModeValue("gray.100", "gray.800");
+  const token = useAuthStore((s) => s.token);
 
-  const messages = [...Array(5)].map((_, i) => ({
-    id: i,
-    designer: "RICK OWENS",
-    item: "Rick Owens leather tyrone pants",
-    snippet: "Please read! I’ve told you that I’d...",
-    date: "1 day ago",
-    user: "rickoboy69",
-    feedback: 129,
-  }));
+  const handleMarkRead = (threadId) => {
+    setThreads((prev) => ({
+      buy: prev.buy.map((t) =>
+        t._id === threadId ? { ...t, hasUnread: false } : t
+      ),
+      sell: prev.sell.map((t) =>
+        t._id === threadId ? { ...t, hasUnread: false } : t
+      ),
+    }));
+  };
 
-  const dummyThread = [
-    {
-      sender: "them",
-      text: "Hey, is this still available?",
-      timestamp: "2d ago",
-    },
-    { sender: "me", text: "Yeah, still available", timestamp: "2d ago" },
-    { sender: "them", text: "Would you take $400?", timestamp: "1d ago" },
-    { sender: "me", text: "Can’t do that. Firm at $500.", timestamp: "1d ago" },
-  ];
+  useEffect(() => {
+    const fetchInbox = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch("/api/messages/inbox", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error("Failed to load messages");
+        const data = await res.json();
+        setThreads({
+          buy: data.buyThreads || [],
+          sell: data.sellThreads || [],
+        });
+      } catch (err) {
+        console.error("Error fetching inbox:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchInbox();
+  }, [token]);
+
+  const hasUnreadBuy = threads.buy.some((t) => t.hasUnread);
+  const hasUnreadSell = threads.sell.some((t) => t.hasUnread);
+
+  const currentThreads = view === "buy" ? threads.buy : threads.sell;
 
   return (
     <>
@@ -53,7 +61,7 @@ export default function Messages() {
           </GridItem>
 
           <GridItem colSpan={8}>
-            <Grid templateColumns="repeat(10, 1fr)" mb={6} gap={2}>
+            <Grid templateColumns="repeat(10, 1fr)" mb={6} gap={0}>
               <GridItem colSpan={5}>
                 <Box
                   as="button"
@@ -61,16 +69,31 @@ export default function Messages() {
                   py={3}
                   fontWeight="bold"
                   textAlign="center"
-                  bg={view === "buy" ? activeBg : inactiveBg}
-                  color={view === "buy" ? activeColor : "inherit"}
-                  onClick={() => {
-                    setView("buy");
-                    setExpandedId(null);
-                  }}
+                  bg={view === "buy" ? "black" : "gray.200"}
+                  color={view === "buy" ? "white" : "gray.700"}
+                  borderBottom={
+                    view === "buy" ? "2px solid gray.900" : "1px solid gray.300"
+                  }
+                  transition="all 0.2s ease"
+                  position="relative"
+                  onClick={() => setView("buy")}
                 >
-                  BUY MESSAGES
+                  BUY
+                  {hasUnreadBuy && (
+                    <Box
+                      position="absolute"
+                      top="50%"
+                      right="calc(50% - 70px)"
+                      transform="translateY(-50%)"
+                      w="8px"
+                      h="8px"
+                      bg={view === "buy" ? "white" : "black"}
+                      borderRadius="full"
+                    />
+                  )}
                 </Box>
               </GridItem>
+
               <GridItem colSpan={5}>
                 <Box
                   as="button"
@@ -78,109 +101,76 @@ export default function Messages() {
                   py={3}
                   fontWeight="bold"
                   textAlign="center"
-                  bg={view === "sell" ? activeBg : inactiveBg}
-                  color={view === "sell" ? activeColor : "inherit"}
-                  onClick={() => {
-                    setView("sell");
-                    setExpandedId(null);
-                  }}
+                  bg={view === "sell" ? "black" : "gray.200"}
+                  color={view === "sell" ? "white" : "gray.700"}
+                  borderBottom={
+                    view === "sell"
+                      ? "2px solid gray.900"
+                      : "1px solid gray.300"
+                  }
+                  transition="all 0.2s ease"
+                  position="relative"
+                  onClick={() => setView("sell")}
                 >
-                  SELL MESSAGES
+                  SELL
+                  {hasUnreadSell && (
+                    <Box
+                      position="absolute"
+                      top="50%"
+                      right="calc(50% - 65px)"
+                      transform="translateY(-50%)"
+                      w="8px"
+                      h="8px"
+                      bg={view === "sell" ? "white" : "gray.600"}
+                      borderRadius="full"
+                    />
+                  )}
                 </Box>
               </GridItem>
             </Grid>
 
-            <VStack align="start" spacing={6}>
-              {messages.map((msg) => (
-                <Box
-                  key={msg.id}
-                  w="full"
-                  border="1px solid"
-                  borderColor="gray.200"
-                  borderRadius="md"
-                  _hover={{ bg: "gray.50" }}
-                  onClick={() =>
-                    setExpandedId(expandedId === msg.id ? null : msg.id)
-                  }
-                  cursor="pointer"
-                  transition="background 0.2s"
-                >
-                  <HStack
-                    spacing={6}
-                    w="full"
-                    justify="space-between"
-                    align="center"
-                    p={4}
-                    borderBottom={
-                      expandedId === msg.id ? "1px solid gray.200" : "none"
-                    }
-                  >
-                    <HStack spacing={4} minW="240px">
-                      <Avatar
-                        size="md"
-                        name={msg.designer}
-                        bg="gray.200"
-                        color="gray.700"
-                      />
-                      <VStack spacing={1} align="start">
-                        <Text fontWeight="bold" fontSize="sm">
-                          {msg.designer}
-                        </Text>
-                        <Text fontSize="xs" color="gray.600">
-                          {msg.item}
-                        </Text>
-                      </VStack>
-                    </HStack>
-
-                    <Box flex="1" px={4}>
-                      <Text
-                        fontSize="xs"
-                        color="gray.600"
-                        noOfLines={1}
-                        textAlign="left"
-                      >
-                        {msg.snippet}
-                      </Text>
-                    </Box>
-
-                    <Box textAlign="right" minW="90px">
-                      <Text fontSize="xs" color="gray.500">
-                        {msg.date}
-                        <br />
-                        <Box as="span" fontWeight="semibold" color="gray.700">
-                          {msg.user} ({msg.feedback})
-                        </Box>
-                      </Text>
-                    </Box>
-                  </HStack>
-
-                  {expandedId === msg.id && (
-                    <Box px={6} py={4}>
-                      {dummyThread.map((m, i) => (
-                        <Box key={i} mb={3}>
-                          <Text
-                            fontSize="xs"
-                            fontWeight="medium"
-                            color={m.sender === "me" ? "black" : "gray.700"}
-                          >
-                            {m.sender === "me" ? "You" : msg.user}
-                          </Text>
-                          <Text fontSize="sm" mb={1}>
-                            {m.text}
-                          </Text>
-                          <Text fontSize="xs" color="gray.400">
-                            {m.timestamp}
-                          </Text>
-                        </Box>
-                      ))}
-                      <Button size="sm" mt={4}>
-                        Reply
-                      </Button>
-                    </Box>
-                  )}
-                </Box>
-              ))}
-            </VStack>
+            {loading ? (
+              <Box
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                minH="50vh"
+                w="full"
+              >
+                <Spinner size="xl" thickness="4px" color="gray.300" />
+              </Box>
+            ) : currentThreads.length === 0 ? (
+              <Box
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                minH="40vh"
+                w="full"
+              >
+                <Text fontSize="sm" color="gray.500">
+                  No {view === "buy" ? "buying" : "selling"} messages yet
+                </Text>
+              </Box>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.25 }}
+                style={{ width: "100%" }}
+              >
+                <VStack align="start" spacing={6} w="full">
+                  {currentThreads.map((thread) => (
+                    <Thread
+                      key={thread._id}
+                      thread={thread}
+                      token={token}
+                      view={view}
+                      onMarkRead={handleMarkRead}
+                    />
+                  ))}
+                </VStack>
+              </motion.div>
+            )}
           </GridItem>
 
           <GridItem colSpan={2} />

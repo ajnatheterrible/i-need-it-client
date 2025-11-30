@@ -13,15 +13,11 @@ import {
 import { CheckIcon } from "@chakra-ui/icons";
 import { PuffLoader } from "react-spinners";
 import { motion } from "framer-motion";
-
 import { useParams, Link as RouterLink, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-
 import Container from "../components/shared/Container";
 import Footer from "../components/layout/Footer";
-
 import useAuthStore from "../store/authStore";
-
 import formatFullDate from "../utils/formatFullDate";
 import useFetchOrder from "../hooks/useFetchOrder";
 
@@ -34,9 +30,7 @@ export default function OrderDetailsPage() {
   const { orderId } = useParams();
   const navigate = useNavigate();
   const { order, loading, error } = useFetchOrder(orderId);
-
   const [orderStatus, setOrderStatus] = useState(null);
-
   const token = useAuthStore((s) => s.token);
 
   const formatPrice = (value) => {
@@ -48,8 +42,8 @@ export default function OrderDetailsPage() {
   const stepIndexFromStatus = (s) => {
     const val = (s || "").toUpperCase();
     if (val === "DELIVERED") return 2;
-    if (val === "SHIPPED") return 0;
     if (val === "IN TRANSIT") return 1;
+    if (val === "SHIPPED") return 0;
     return 0;
   };
 
@@ -62,30 +56,33 @@ export default function OrderDetailsPage() {
   useEffect(() => {
     if (!order || !order.status) return;
 
-    let interval;
-
-    const simulateStatus = async () => {
+    const triggerBackendSimulation = async () => {
       try {
-        const res = await fetch(`/api/orders/${orderId}/simulate`, {
+        await fetch(`/api/orders/${orderId}/simulate`, {
           method: "PATCH",
           headers: { Authorization: `Bearer ${token}` },
         });
-        const data = await res.json();
-
-        if (data.order.status !== "DELIVERED") {
-          interval = setTimeout(simulateStatus, 3000);
-        }
-
-        setOrderStatus(data.order.status);
       } catch (err) {
         console.error("Simulation failed", err);
       }
     };
 
-    simulateStatus();
+    triggerBackendSimulation();
 
-    return () => clearTimeout(interval);
-  }, [order]);
+    const sequence = ["SHIPPED", "IN TRANSIT", "DELIVERED"];
+    let idx = 0;
+    setOrderStatus(sequence[idx]);
+    const interval = setInterval(() => {
+      idx++;
+      if (idx < sequence.length) {
+        setOrderStatus(sequence[idx]);
+      } else {
+        clearInterval(interval);
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [orderId, token, order]);
 
   if (loading) {
     return (
@@ -108,21 +105,16 @@ export default function OrderDetailsPage() {
   const listing = order?.listing || order?.listingSnapshot || {};
   const { shippingAddress, createdAt, status, seller, price } = order;
   const { listingPrice, shipping, tax, total } = price || {};
-
   const currentStep = stepIndexFromStatus(orderStatus || status);
-
   const shippedAt =
     order.statusHistory.find((h) => h.status === "SHIPPED")?.updatedAt || null;
-
   const deliveredAt =
     order.statusHistory.find((h) => h.status === "DELIVERED")?.updatedAt ||
     null;
-
   const totalSteps = 3;
   const startOffsetPct = 100 / (totalSteps * 2);
   const widthPct =
     (Math.max(0, Math.min(currentStep, totalSteps - 1)) * 100) / totalSteps;
-
   const thumb =
     listing?.thumbnail ||
     listing?.images?.[0] ||
@@ -139,7 +131,6 @@ export default function OrderDetailsPage() {
           <Heading mb={6} mt={10} size="lg">
             Order details
           </Heading>
-
           <Grid
             templateColumns={{ base: "1fr", lg: "2fr 1.05fr" }}
             gap={{ base: 10, lg: 24 }}
@@ -191,7 +182,6 @@ export default function OrderDetailsPage() {
                 <Text fontWeight="bold" mb={4}>
                   Delivery info
                 </Text>
-
                 <Box position="relative" px={2} py={2}>
                   <MotionBox
                     position="absolute"
@@ -204,7 +194,6 @@ export default function OrderDetailsPage() {
                     transition={{ duration: 0.6, ease: "easeInOut" }}
                     zIndex={0}
                   />
-
                   <HStack
                     justify="space-between"
                     position="relative"
@@ -256,7 +245,6 @@ export default function OrderDetailsPage() {
                         >
                           <CheckIcon boxSize="14px" color="white" />
                         </MotionFlex>
-
                         <MotionText
                           fontWeight="bold"
                           mt={1}
@@ -275,7 +263,6 @@ export default function OrderDetailsPage() {
                         >
                           {step.label}
                         </MotionText>
-
                         <Box minH="20px">
                           {step.date && (
                             <Text fontSize="xs" color="gray.500">
@@ -287,7 +274,6 @@ export default function OrderDetailsPage() {
                     ))}
                   </HStack>
                 </Box>
-
                 <Divider mt={6} />
               </Box>
 
@@ -318,7 +304,6 @@ export default function OrderDetailsPage() {
                     </Text>
                   </VStack>
                 </Box>
-
                 <Box>
                   <Text fontWeight="bold" mb={2}>
                     Payment
@@ -406,7 +391,6 @@ export default function OrderDetailsPage() {
                   >
                     View Tracking
                   </Button>
-
                   <MotionButton
                     variant="outline"
                     borderRadius="none"
@@ -417,7 +401,6 @@ export default function OrderDetailsPage() {
                   >
                     Edit Feedback
                   </MotionButton>
-
                   <MotionButton
                     variant="outline"
                     borderRadius="none"
