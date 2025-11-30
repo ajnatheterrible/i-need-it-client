@@ -15,7 +15,7 @@ import {
   Img,
   Flex,
 } from "@chakra-ui/react";
-import { WarningIcon } from "@chakra-ui/icons";
+import { WarningIcon, StarIcon } from "@chakra-ui/icons";
 import { FaHeart, FaRegHeart } from "react-icons/fa";
 
 import { useEffect, useState, useRef } from "react";
@@ -59,6 +59,28 @@ export default function ListingPage() {
   const isViewerSeller =
     isLoggedIn && user?.username === listing?.seller?.username;
 
+  const viewerId = user?._id;
+  const buyerId =
+    listing?.buyer && typeof listing.buyer === "object"
+      ? listing.buyer._id
+      : listing?.buyer;
+  const viewerIsBuyer =
+    isLoggedIn && buyerId && viewerId && String(buyerId) === String(viewerId);
+
+  const isListingDeleted = !!listing?.isDeleted;
+  const isListingSold = !!listing?.isSold;
+
+  const showUnavailableBanner =
+    !!listing &&
+    (isListingDeleted || isListingSold) &&
+    !isViewerSeller &&
+    !viewerIsBuyer;
+
+  const showBuyerSoldBanner = !!listing && isListingSold && viewerIsBuyer;
+  const showSellerSoldBanner = !!listing && isListingSold && isViewerSeller;
+
+  const disableBuyerActions = showUnavailableBanner || showBuyerSoldBanner;
+
   useEffect(() => {
     const fetchListing = async () => {
       setIsLoading(true);
@@ -78,7 +100,13 @@ export default function ListingPage() {
 
   useEffect(() => {
     const fetchActiveOffer = async () => {
-      if (!token || !isLoggedIn || !listing || isViewerSeller) {
+      if (
+        !token ||
+        !isLoggedIn ||
+        !listing ||
+        isViewerSeller ||
+        disableBuyerActions
+      ) {
         setActiveSellerOffer(null);
         return;
       }
@@ -106,7 +134,7 @@ export default function ListingPage() {
     };
 
     fetchActiveOffer();
-  }, [token, isLoggedIn, listing, isViewerSeller]);
+  }, [token, isLoggedIn, listing, isViewerSeller, disableBuyerActions]);
 
   const offerExpiresAt = activeSellerOffer?.expiresAt;
 
@@ -261,8 +289,6 @@ export default function ListingPage() {
     return Math.round(((original - sale) / original) * 100);
   };
 
-  const handleGuestAction = () => onOpenAuthModal("register");
-
   const formatOfferCountdown = (ms) => {
     if (ms == null) return "";
     const totalSeconds = Math.floor(ms / 1000);
@@ -276,10 +302,15 @@ export default function ListingPage() {
   };
 
   const basePrice = listing?.price || 0;
-  const offerPrice = activeSellerOffer
-    ? activeSellerOffer.amount_cents / 100
-    : null;
-  const displayPrice = offerPrice ?? basePrice;
+  const sellerOfferPrice =
+    activeSellerOffer && !disableBuyerActions
+      ? activeSellerOffer.amount_cents / 100
+      : null;
+  const displayPrice = sellerOfferPrice ?? basePrice;
+
+  const bannerText = isListingDeleted
+    ? "This listing has been removed"
+    : "This listing has sold";
 
   return (
     <>
@@ -287,6 +318,84 @@ export default function ListingPage() {
 
       {!isLoading && listing && (
         <Container>
+          {showUnavailableBanner && (
+            <Box
+              w="100%"
+              bg="gray.100"
+              borderBottom="1px solid"
+              borderColor="gray.200"
+              py={3}
+              textAlign="center"
+              mb={4}
+              mt={10}
+            >
+              <Text fontSize="sm" fontWeight="semibold" color="gray.700">
+                {bannerText}
+              </Text>
+            </Box>
+          )}
+
+          {!showUnavailableBanner && showBuyerSoldBanner && (
+            <>
+              <Box
+                w="100%"
+                bg="gray.100"
+                borderBottom="1px solid"
+                borderColor="gray.200"
+                py={3}
+                textAlign="center"
+                mb={0}
+                mt={10}
+              >
+                <Text fontSize="sm" fontWeight="semibold" color="gray.700">
+                  This listing has sold
+                </Text>
+              </Box>
+              <Box w="100%" py={3} px={6} mt={4} mb={6}>
+                <Flex align="center" justify="space-between">
+                  <HStack spacing={3}>
+                    <Text fontSize="sm" fontWeight="semibold" color="gray.800">
+                      Leave feedback on this listing
+                    </Text>
+                    <HStack spacing={1}>
+                      {[0, 1, 2, 3, 4].map((i) => (
+                        <StarIcon key={i} boxSize={3.5} color="gray.300" />
+                      ))}
+                    </HStack>
+                  </HStack>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    borderRadius="none"
+                    colorScheme="blackAlpha"
+                    onClick={() => {
+                      if (!isLoggedIn) return onOpenAuthModal("register");
+                    }}
+                  >
+                    Leave Feedback
+                  </Button>
+                </Flex>
+              </Box>
+            </>
+          )}
+
+          {!showUnavailableBanner && showSellerSoldBanner && (
+            <Box
+              w="100%"
+              bg="gray.100"
+              borderBottom="1px solid"
+              borderColor="gray.200"
+              py={3}
+              textAlign="center"
+              mb={4}
+              mt={10}
+            >
+              <Text fontSize="sm" fontWeight="semibold" color="gray.700">
+                This listing has sold
+              </Text>
+            </Box>
+          )}
+
           <Grid templateColumns="repeat(12, 1fr)" gap={6} mt={10}>
             <GridItem colSpan={[12, null, 8]}>
               <Grid templateColumns="repeat(8, 1fr)" gap={2}>
@@ -313,11 +422,18 @@ export default function ListingPage() {
                         objectFit: "cover",
                         objectPosition: "center center",
                         cursor: "zoom-in",
+                        opacity: showUnavailableBanner ? 0.35 : 1,
+                        transition: "opacity 0.2s",
                       }}
                       onClick={openImageModal}
                     />
                   ) : (
-                    <Box bg="gray.100" w="100%" h="600px" />
+                    <Box
+                      bg="gray.100"
+                      w="100%"
+                      h="600px"
+                      opacity={showUnavailableBanner ? 0.35 : 1}
+                    />
                   )}
                 </GridItem>
 
@@ -346,7 +462,12 @@ export default function ListingPage() {
                             height: "80px",
                             objectFit: "cover",
                             objectPosition: "center center",
-                            opacity: i === activeIndex ? 1 : 0.4,
+                            opacity:
+                              i === activeIndex && !showUnavailableBanner
+                                ? 1
+                                : showUnavailableBanner
+                                ? 0.3
+                                : 0.4,
                             transition: "opacity 0.2s",
                             cursor: "pointer",
                           }}
@@ -356,7 +477,11 @@ export default function ListingPage() {
                     ))
                   : Array.from({ length: 5 }).map((_, i) => (
                       <GridItem colSpan={1} key={i}>
-                        <Box bg="gray.200" h="80px" />
+                        <Box
+                          bg="gray.200"
+                          h="80px"
+                          opacity={showUnavailableBanner ? 0.35 : 1}
+                        />
                       </GridItem>
                     ))}
               </Grid>
@@ -411,7 +536,7 @@ export default function ListingPage() {
                 </VStack>
 
                 <Box>
-                  {activeSellerOffer ? (
+                  {sellerOfferPrice ? (
                     <>
                       <HStack spacing={3} align="baseline">
                         <Text
@@ -481,7 +606,7 @@ export default function ListingPage() {
                   <Text fontSize="sm">+ $9 Shipping — US to United States</Text>
                 </Box>
 
-                {!isViewerSeller && (
+                {!isViewerSeller && !disableBuyerActions && (
                   <KlarnaAffirmButton
                     onOpen={onKlarnaOpen}
                     price={displayPrice}
@@ -490,69 +615,104 @@ export default function ListingPage() {
 
                 {!isViewerSeller ? (
                   <VStack w="100%" spacing={2}>
-                    <HStack w="100%">
-                      <Button
-                        borderRadius="none"
-                        colorScheme="blackAlpha"
-                        flex="1"
-                        onClick={() => {
-                          if (!isLoggedIn) return onOpenAuthModal("register");
-                          navigate(`/checkout/${listing._id}`);
-                        }}
-                      >
-                        Purchase
-                      </Button>
-                    </HStack>
-
-                    <HStack w="100%">
-                      {listing.canOffer && (
+                    {showBuyerSoldBanner ? (
+                      <HStack w="100%">
                         <Button
                           borderRadius="none"
-                          variant="outline"
+                          colorScheme="blackAlpha"
                           flex="1"
                           onClick={() => {
                             if (!isLoggedIn) return onOpenAuthModal("register");
-                            onOfferOpen();
                           }}
                         >
-                          Offer
+                          Resell
                         </Button>
-                      )}
-                      <Button
-                        borderRadius="none"
-                        variant="outline"
-                        flex="1"
-                        onClick={() => {
-                          if (!isLoggedIn) return onOpenAuthModal("register");
-                          onMessageOpen();
-                        }}
-                      >
-                        Message
-                      </Button>
-                    </HStack>
+                      </HStack>
+                    ) : (
+                      !showUnavailableBanner && (
+                        <>
+                          <HStack w="100%">
+                            <Button
+                              borderRadius="none"
+                              colorScheme="blackAlpha"
+                              flex="1"
+                              onClick={() => {
+                                if (!isLoggedIn)
+                                  return onOpenAuthModal("register");
+                                navigate(`/checkout/${listing._id}`);
+                              }}
+                            >
+                              Purchase
+                            </Button>
+                          </HStack>
+
+                          <HStack w="100%">
+                            {listing.canOffer && (
+                              <Button
+                                borderRadius="none"
+                                variant="outline"
+                                flex="1"
+                                onClick={() => {
+                                  if (!isLoggedIn)
+                                    return onOpenAuthModal("register");
+                                  onOfferOpen();
+                                }}
+                              >
+                                Offer
+                              </Button>
+                            )}
+                            <Button
+                              borderRadius="none"
+                              variant="outline"
+                              flex="1"
+                              onClick={() => {
+                                if (!isLoggedIn)
+                                  return onOpenAuthModal("register");
+                                onMessageOpen();
+                              }}
+                            >
+                              Message
+                            </Button>
+                          </HStack>
+                        </>
+                      )
+                    )}
                   </VStack>
                 ) : (
                   <VStack w="100%" spacing={2}>
-                    <Button w="100%" colorScheme="blackAlpha">
-                      Drop Price
-                    </Button>
-                    <Button
-                      w="100%"
-                      variant="outline"
-                      onClick={() => navigate(`/sell/edit/${listing._id}`)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      w="100%"
-                      variant="outline"
-                      onClick={onBroadcastOpen}
-                    >
-                      Send Offer
-                    </Button>
-                    <Button w="100%" variant="outline">
-                      Delete
-                    </Button>
+                    {showSellerSoldBanner ? (
+                      <>
+                        <Button w="100%" variant="outline" borderRadius="none">
+                          Issue Refund
+                        </Button>
+                        <Button w="100%" variant="outline" borderRadius="none">
+                          Duplicate Listing
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button w="100%" colorScheme="blackAlpha">
+                          Drop Price
+                        </Button>
+                        <Button
+                          w="100%"
+                          variant="outline"
+                          onClick={() => navigate(`/sell/edit/${listing._id}`)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          w="100%"
+                          variant="outline"
+                          onClick={onBroadcastOpen}
+                        >
+                          Send Offer
+                        </Button>
+                        <Button w="100%" variant="outline">
+                          Delete
+                        </Button>
+                      </>
+                    )}
                   </VStack>
                 )}
 
@@ -718,7 +878,7 @@ export default function ListingPage() {
         />
       )}
 
-      {isImageOpen && (
+      {isImageOpen && listing && (
         <Box
           position="fixed"
           top={0}
