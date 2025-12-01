@@ -338,14 +338,9 @@ export default function Thread({
     listing.isArchived;
 
   const showArchivedBanner =
-    viewerIsBuyer &&
+    !viewerIsBuyer &&
     (thread.archivedReason === "listing_deleted" ||
-      thread.archivedReason === "sold_to_other" ||
-      (!thread.archivedReason &&
-        (listing.isDeleted ||
-          listing.isArchived ||
-          (listing.isSold &&
-            String(listing.buyer || "") !== String(userId || "")))));
+      (!thread.archivedReason && (listing.isDeleted || listing.isArchived)));
 
   const archivedBannerText =
     thread.archivedReason === "listing_deleted" || listing.isDeleted

@@ -105,21 +105,31 @@ export default function Purchases() {
                           <Box py={6}>
                             <Flex w="full" align="center" gap={6}>
                               <Flex flex={2} gap={4} align="center">
-                                <Image
-                                  src={item.thumbnail}
-                                  alt={item.title}
-                                  h="140px"
-                                  w="120px"
-                                  objectFit="cover"
-                                  fallbackSrc="https://via.placeholder.com/140"
-                                />
+                                <Box
+                                  as={RouterLink}
+                                  to={`/listing/${item._id}`}
+                                >
+                                  <Image
+                                    src={item.thumbnail}
+                                    alt={item.title}
+                                    h="140px"
+                                    w="120px"
+                                    objectFit="cover"
+                                    fallbackSrc="https://via.placeholder.com/140"
+                                  />
+                                </Box>
                                 <VStack align="start" spacing={1}>
                                   <Text fontWeight="bold" fontSize="xs">
                                     {item.designer}
                                   </Text>
-                                  <Text fontSize="xs" color="gray.600">
+                                  <Link
+                                    as={RouterLink}
+                                    to={`/listing/${item._id}`}
+                                    fontSize="xs"
+                                    color="gray.600"
+                                  >
                                     {item.title}
-                                  </Text>
+                                  </Link>
                                   <Text fontWeight="semibold" fontSize="xs">
                                     {formatPrice(item.price)}
                                   </Text>

@@ -5,44 +5,81 @@ import {
   Text,
   VStack,
   HStack,
-  Icon,
-  Button,
-  Divider,
   Flex,
+  Skeleton,
+  SkeletonText,
+  Divider,
 } from "@chakra-ui/react";
-import { FaStar } from "react-icons/fa";
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+
 import Container from "../../components/shared/Container";
 import Footer from "../../components/layout/Footer";
 import SellerSidebar from "../../components/sidebars/SellerSidebar";
 import SellerProfileHeader from "../../components/profile/SellerProfileHeader";
+import ReviewCard from "../../components/ui/ReviewCard";
+import useAuthStore from "../../store/authStore";
+
+const SkeletonReviewRow = () => (
+  <Box w="full" display="flex" justifyContent="center">
+    <Box w="700px">
+      <Flex justify="space-between" align="flex-start">
+        <VStack align="start" spacing={3} maxW="calc(100% - 120px)">
+          <Skeleton height="14px" width="120px" />
+
+          <HStack spacing={1}>
+            {Array(5)
+              .fill("")
+              .map((_, i) => (
+                <Skeleton key={i} boxSize={4} borderRadius="full" />
+              ))}
+          </HStack>
+
+          <SkeletonText noOfLines={2} spacing="2" w="80%" />
+
+          <Skeleton height="14px" width="60%" />
+
+          <Box mt={1}>
+            <Skeleton height="14px" width="80px" mb={1} />
+            <Skeleton height="14px" width="150px" />
+          </Box>
+        </VStack>
+
+        <Box ml={4} w="100px" h="100px">
+          <Skeleton w="100%" h="100%" />
+        </Box>
+      </Flex>
+    </Box>
+  </Box>
+);
 
 export default function Feedback() {
-  const feedback = [
-    {
-      id: 1,
-      date: "March 16, 2025",
-      text: "Amazing, fast shipping and communication on point. thanks a lot",
-      brand: "Rick Owens",
-      title: "Perforated Pull-On Square Boots",
-      tags: ["Fast Shipper", "Item As Described", "Quick Replies"],
-    },
-    {
-      id: 2,
-      date: "March 14, 2025",
-      text: "packaged weird so the collar is a bit messed up other than that basically perfect",
-      brand: "Somar",
-      title: "Blood Pixel Waxed Moto Jacket",
-      tags: ["Item As Described"],
-    },
-    {
-      id: 3,
-      date: "August 18, 2024",
-      text: "Shipped same day, arrived fast and packaging was great to ensure item didn’t get damaged. Perfect.",
-      brand: "Balenciaga",
-      title: "Le Cagole Coin Purse with Piercings",
-      tags: ["Fast Shipper", "Item As Described"],
-    },
-  ];
+  const user = useAuthStore((s) => s.user);
+  const sellerId = user?._id;
+
+  const [reviews, setReviews] = useState([]);
+  const [hasFetchedReviews, setHasFetchedReviews] = useState(false);
+
+  useEffect(() => {
+    if (!sellerId) return;
+
+    const fetchReviews = async () => {
+      try {
+        const res = await fetch(`/api/feedback/seller/${sellerId}`);
+        const reviewsData = res.ok ? await res.json() : [];
+        setReviews(Array.isArray(reviewsData) ? reviewsData : []);
+      } catch {
+        setReviews([]);
+      } finally {
+        setHasFetchedReviews(true);
+      }
+    };
+
+    fetchReviews();
+  }, [sellerId]);
+
+  const hasReviews = Array.isArray(reviews) && reviews.length > 0;
+  const isLoading = !hasFetchedReviews && !!sellerId;
 
   return (
     <>
@@ -57,130 +94,85 @@ export default function Feedback() {
             pb={10}
             w="full"
           >
-            {/* Sidebar */}
             <GridItem colSpan={2}>
               <SellerSidebar active="FEEDBACK" />
             </GridItem>
 
-            {/* Main Content */}
             <GridItem colSpan={10}>
-              <VStack align="start" spacing={10} w="full">
-                {/* Seller Score Section */}
-                <Box
-                  border="1px solid"
-                  borderColor="gray.200"
-                  w="full"
-                  p={6}
-                  borderRadius="md"
-                >
-                  <VStack spacing={2} align="center" textAlign="center">
-                    <Text fontWeight="bold" fontSize="xl">
-                      Seller Score
-                    </Text>
-                    <HStack spacing={1}>
-                      {[...Array(5)].map((_, i) => (
-                        <Icon key={i} as={FaStar} color="#DCEF31" boxSize={4} />
-                      ))}
-                    </HStack>
-                    <Text fontSize="sm" color="gray.500">
-                      16 Reviews
-                    </Text>
-                    <HStack spacing={3} pt={2}>
-                      <Button size="sm" variant="outline" fontSize="sm">
-                        Fast Shipper
-                      </Button>
-                      <Button size="sm" variant="outline" fontSize="sm">
-                        Item As Described
-                      </Button>
-                      <Button size="sm" variant="outline" fontSize="sm">
-                        Quick Replies
-                      </Button>
-                    </HStack>
-                  </VStack>
-                </Box>
+              <VStack align="start" spacing={6} w="full">
+                <Text fontSize="xl" fontWeight="bold">
+                  Reviews
+                </Text>
 
-                {/* Feedback Entries */}
-                {feedback.map((f, index) => (
-                  <Box
-                    key={f.id}
-                    w="full"
-                    display="flex"
-                    justifyContent="center"
-                  >
-                    <Box w="700px">
-                      <Flex justify="space-between" align="flex-start">
-                        {/* Left column */}
-                        <VStack
-                          align="start"
-                          spacing={3}
-                          maxW="calc(100% - 120px)"
-                        >
-                          <Text
-                            fontSize="xs"
-                            fontWeight="semibold"
-                            color="gray.800"
-                          >
-                            {f.date}
-                          </Text>
-
-                          <HStack spacing={1}>
-                            {[...Array(5)].map((_, i) => (
-                              <Icon
-                                key={i}
-                                as={FaStar}
-                                color="#DCEF31"
-                                boxSize={3}
-                              />
-                            ))}
-                          </HStack>
-
-                          <Text fontSize="sm">{f.text}</Text>
-
-                          <HStack spacing={2} wrap="wrap">
-                            {f.tags.map((tag) => (
-                              <Button
-                                key={tag}
-                                size="xs"
-                                variant="outline"
-                                color="gray.600"
-                                fontSize="xs"
-                              >
-                                {tag}
-                              </Button>
-                            ))}
-                          </HStack>
-
-                          {/* Brand + Title */}
-                          {f.brand && f.title && (
-                            <VStack align="start" spacing={0} pt={2}>
-                              <Text
-                                fontSize="xs"
-                                fontWeight="bold"
-                                textDecoration="underline"
-                                textTransform="uppercase"
-                              >
-                                {f.brand}
-                              </Text>
-                              <Text fontSize="xs">{f.title}</Text>
-                            </VStack>
+                <Flex justify="center" w="full">
+                  <VStack spacing={6} align="stretch" w="full">
+                    {isLoading &&
+                      Array.from({ length: 3 }).map((_, idx) => (
+                        <Box key={idx} mb={2}>
+                          <SkeletonReviewRow />
+                          {idx < 2 && (
+                            <Box
+                              w="full"
+                              display="flex"
+                              justifyContent="center"
+                              mt={6}
+                            >
+                              <Box w="700px">
+                                <Divider borderColor="gray.200" />
+                              </Box>
+                            </Box>
                           )}
+                        </Box>
+                      ))}
+
+                    {!isLoading && hasFetchedReviews && hasReviews && (
+                      <motion.div
+                        key="feedback-list"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.25 }}
+                      >
+                        <VStack spacing={6} align="stretch">
+                          {reviews.map((review, idx) => (
+                            <Box
+                              key={review._id || idx}
+                              w="full"
+                              display="flex"
+                              justifyContent="center"
+                            >
+                              <Box w="700px">
+                                <ReviewCard review={review} />
+                                {idx < reviews.length - 1 && (
+                                  <Divider my={6} borderColor="gray.200" />
+                                )}
+                              </Box>
+                            </Box>
+                          ))}
                         </VStack>
+                      </motion.div>
+                    )}
 
-                        {/* Placeholder Box for Image */}
+                    {!isLoading && hasFetchedReviews && !hasReviews && (
+                      <motion.div
+                        key="no-feedback"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.25 }}
+                      >
                         <Box
-                          w="100px"
-                          h="100px"
-                          bg="gray.200"
-                          borderRadius="md"
-                          ml={4}
-                          flexShrink={0}
-                        />
-                      </Flex>
-
-                      {index < feedback.length - 1 && <Divider my={6} />}
-                    </Box>
-                  </Box>
-                ))}
+                          w="full"
+                          display="flex"
+                          justifyContent="center"
+                          mt={4}
+                        >
+                          <Text fontSize="sm" color="gray.500">
+                            No feedback yet
+                          </Text>
+                        </Box>
+                      </motion.div>
+                    )}
+                  </VStack>
+                </Flex>
               </VStack>
             </GridItem>
           </Grid>

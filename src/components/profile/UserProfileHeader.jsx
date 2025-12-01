@@ -13,16 +13,17 @@ import {
   Tabs,
   TabList,
   Tab,
-} from "@chakra-ui/react";
-import { FaStar } from "react-icons/fa";
-import { FiMapPin, FiAward, FiZap, FiShare2 } from "react-icons/fi";
-import { Link as RouterLink, useLocation } from "react-router-dom";
-import {
   Popover,
   PopoverBody,
   PopoverContent,
   PopoverTrigger,
+  Skeleton,
 } from "@chakra-ui/react";
+import { FaStar } from "react-icons/fa";
+import { FiMapPin, FiAward, FiZap, FiShare2 } from "react-icons/fi";
+import { Link as RouterLink, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import useAuthStore from "../../store/authStore";
 
 export default function UserProfileHeader() {
@@ -30,6 +31,41 @@ export default function UserProfileHeader() {
   const { onCopy } = useClipboard(url);
   const location = useLocation();
   const { user } = useAuthStore();
+
+  const [stats, setStats] = useState(null);
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  const userId = user?._id;
+
+  useEffect(() => {
+    if (!userId) {
+      setLoadingStats(false);
+      return;
+    }
+
+    const fetchStats = async () => {
+      setLoadingStats(true);
+      try {
+        const res = await fetch(`/api/feedback/seller/${userId}/stats`);
+        const data = res.ok ? await res.json() : null;
+        setStats(data);
+      } catch {
+        setStats(null);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    fetchStats();
+  }, [userId]);
+
+  const averageRating = stats?.ratingAverage || 0;
+  const ratingCount = stats?.ratingCount || 0;
+  const tagCounts = stats?.tagCounts || {};
+  const transactionsCount = stats?.transactionsCount || 0;
+
+  const hasTrustedSeller = (tagCounts.FAST_SHIPPER || 0) >= 10;
+  const hasQuickResponder = (tagCounts.QUICK_REPLIES || 0) >= 10;
 
   const getActiveTab = () => {
     if (location.pathname === "/profile") return "Selling";
@@ -48,17 +84,27 @@ export default function UserProfileHeader() {
             <Avatar
               size="xl"
               src="/avatar.jpg"
-              name="amnesia_"
+              name={user?.username || ""}
               bg="gray.200"
               color="gray.700"
             />
             <VStack align="start" spacing={0}>
               <Text fontWeight="bold" fontSize="2xl">
-                {user.username}
+                {user?.username || ""}
               </Text>
-              <Text fontSize="sm" color="gray.600">
-                41 Transactions
-              </Text>
+              {loadingStats ? (
+                <Skeleton height="16px" width="140px" mt={1} />
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <Text fontSize="sm" color="gray.600">
+                    {transactionsCount} Transactions
+                  </Text>
+                </motion.div>
+              )}
               <HStack spacing={1} pt={1}>
                 <Text fontSize="xs" color="gray.500">
                   Joined in 2021
@@ -69,50 +115,74 @@ export default function UserProfileHeader() {
                 </Text>
               </HStack>
               <HStack pt={3} spacing={2}>
-                <Button
-                  leftIcon={<FiAward />}
-                  size="xs"
-                  variant="ghost"
-                  fontWeight="bold"
-                  fontSize="xs"
-                  colorScheme="purple"
-                  bg="purple.50"
-                >
-                  Trusted seller
-                </Button>
-                <Button
-                  leftIcon={<FiZap />}
-                  size="xs"
-                  variant="ghost"
-                  fontWeight="bold"
-                  fontSize="xs"
-                  colorScheme="purple"
-                  bg="purple.50"
-                >
-                  Quick responder
-                </Button>
+                {hasTrustedSeller && (
+                  <Button
+                    leftIcon={<FiAward />}
+                    size="xs"
+                    variant="ghost"
+                    fontWeight="bold"
+                    fontSize="xs"
+                    colorScheme="purple"
+                    bg="purple.50"
+                  >
+                    Trusted seller
+                  </Button>
+                )}
+                {hasQuickResponder && (
+                  <Button
+                    leftIcon={<FiZap />}
+                    size="xs"
+                    variant="ghost"
+                    fontWeight="bold"
+                    fontSize="xs"
+                    colorScheme="purple"
+                    bg="purple.50"
+                  >
+                    Quick responder
+                  </Button>
+                )}
               </HStack>
             </VStack>
           </HStack>
         </GridItem>
 
         <GridItem colSpan={6}>
-          <HStack spacing={8}>
-            <HStack spacing={1}>
-              <Icon as={FaStar} color="black" boxSize={3.5} />
-              <Text fontWeight="semibold" fontSize="sm">
-                4.9{" "}
-              </Text>
-            </HStack>
-            <Text fontWeight="semibold" fontSize="sm">
-              <ChakraLink
-                as={RouterLink}
-                to="/profile/reviews"
-                textDecor="underline"
-              >
-                16 reviews
-              </ChakraLink>
-            </Text>
+          <HStack spacing={8} align="center">
+            <Box>
+              {loadingStats ? (
+                <HStack spacing={4} align="center">
+                  <HStack spacing={1} align="center">
+                    <Skeleton boxSize={3.5} borderRadius="full" />
+                    <Skeleton height="14px" width="32px" />
+                  </HStack>
+                  <Skeleton height="14px" width="100px" />
+                </HStack>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <HStack spacing={8} align="center">
+                    <HStack spacing={1} align="center">
+                      <Icon as={FaStar} color="black" boxSize={3.5} />
+                      <Text fontWeight="semibold" fontSize="sm">
+                        {ratingCount > 0 ? averageRating.toFixed(1) : "—"}
+                      </Text>
+                    </HStack>
+                    <Text fontWeight="semibold" fontSize="sm">
+                      <ChakraLink
+                        as={RouterLink}
+                        to="/profile/reviews"
+                        textDecor="underline"
+                      >
+                        {ratingCount} review{ratingCount === 1 ? "" : "s"}
+                      </ChakraLink>
+                    </Text>
+                  </HStack>
+                </motion.div>
+              )}
+            </Box>
 
             <Text fontWeight="semibold" fontSize="sm">
               5 following
