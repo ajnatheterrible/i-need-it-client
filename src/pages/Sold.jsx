@@ -2,32 +2,104 @@ import {
   Box,
   Grid,
   GridItem,
+  Heading,
   Text,
   VStack,
-  Badge,
+  Flex,
   Button,
   Image,
   Divider,
+  Skeleton,
 } from "@chakra-ui/react";
+import { useEffect, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
+import { motion } from "framer-motion";
+
 import Container from "../components/shared/Container";
 import Footer from "../components/layout/Footer";
 import SellerSidebar from "../components/sidebars/SellerSidebar";
 import SellerProfileHeader from "../components/profile/SellerProfileHeader";
 
+import useAuthStore from "../store/authStore";
+import { formatCurrency } from "../utils/priceUtils";
+import formatFullDate from "../utils/formatFullDate";
+
+const formatOrderStatus = (status) => {
+  if (!status) return "Paid";
+  const val = status.toUpperCase();
+
+  if (val === "PAID") return "Ready to ship";
+  if (val === "SHIPPED") return "Shipped";
+  if (val === "DELIVERED") return "Paid to your bank";
+  if (val === "REFUNDED") return "Refunded";
+
+  return val.charAt(0) + val.slice(1).toLowerCase();
+};
+
+const getStatusColor = (status) => {
+  const val = (status || "").toUpperCase();
+  if (val === "PAID") return "orange.400";
+  if (val === "DELIVERED" || val === "REFUNDED") return "green.600";
+  return "green.600";
+};
+
+const formatAddress = (addr = {}) => {
+  const lines = [
+    addr.line1,
+    addr.line2,
+    [addr.city, addr.state, addr.zip].filter(Boolean).join(" "),
+    addr.country,
+  ].filter(Boolean);
+  return lines.join("\n");
+};
+
 export default function Sold() {
-  const sales = [...Array(5)].map((_, i) => ({
-    id: i,
-    brand: "BALENCIAGA",
-    title: "Balenciaga panther mask sunglasses",
-    price: "$350.00",
-    size: "ONE SIZE",
-    date: "April 9, 2025",
-    buyer: "Yasmin Weber",
-    address: "210 Clarkson Ave #419\nBrooklyn, NY 11226-2270\nUnited States",
-    imageUrl: "/placeholder.jpg",
-    status: i % 2 === 0 ? "Ready to Ship" : "Paid to your Bank",
-  }));
+  const token = useAuthStore((s) => s.token);
+  const [sales, setSales] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!token) {
+      setLoading(false);
+      setError("Missing access token");
+      return;
+    }
+
+    const fetchSold = async () => {
+      setLoading(true);
+      setError("");
+
+      try {
+        const res = await fetch("/api/users/sold", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (res.status === 404) {
+          setSales([]);
+          setLoading(false);
+          return;
+        }
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => null);
+          throw new Error(data?.message || "Failed to load sold items");
+        }
+
+        const data = await res.json();
+        setSales(Array.isArray(data) ? data : []);
+      } catch (e) {
+        setError(e.message || "Failed to load sold items");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSold();
+  }, [token]);
 
   return (
     <>
@@ -47,99 +119,230 @@ export default function Sold() {
             </GridItem>
 
             <GridItem colSpan={10}>
-              <VStack align="start" spacing={6} w="full">
-                <Text fontSize="xl" fontWeight="bold">
-                  Sold
-                </Text>
+              {loading ? (
+                <VStack align="start" spacing={4} w="full">
+                  <Heading size="md">Sold</Heading>
 
-                {sales.map((item, index) => (
-                  <Box key={item.id} w="full">
-                    <Grid
-                      templateColumns="2fr 4fr 2fr 3fr 1fr"
-                      gap={4}
-                      alignItems="start"
-                    >
-                      <Box position="relative">
-                        <Image
-                          src={item.imageUrl}
-                          alt={item.title}
-                          objectFit="cover"
-                          height="100px"
-                          borderRadius="md"
-                        />
-                        <Badge
-                          position="absolute"
-                          top="2"
-                          left="2"
-                          fontSize="0.6em"
-                          fontWeight="bold"
-                          colorScheme="blackAlpha"
-                        >
-                          Sold
-                        </Badge>
+                  {Array.from({ length: 2 }).map((_, i) => (
+                    <Box key={i} w="full">
+                      <Box py={6}>
+                        <Flex w="full" align="center" gap={6}>
+                          <Flex flex={2} gap={4} align="center">
+                            <Skeleton h="140px" w="120px" />
+
+                            <VStack align="start" spacing={2} w="260px">
+                              <Skeleton h="10px" w="90px" />
+                              <Skeleton h="10px" w="110px" />
+                              <Skeleton h="10px" w="220px" />
+                              <Skeleton h="10px" w="70px" />
+                              <Skeleton h="10px" w="40px" />
+                            </VStack>
+                          </Flex>
+
+                          <VStack
+                            align="start"
+                            spacing={2}
+                            fontSize="xs"
+                            flex={1}
+                          >
+                            <Skeleton h="10px" w="100px" />
+                            <Skeleton h="10px" w="150px" />
+                            <Skeleton h="10px" w="150px" />
+                          </VStack>
+
+                          <VStack
+                            align="start"
+                            spacing={2}
+                            fontSize="xs"
+                            flex={1}
+                          >
+                            <Skeleton h="10px" w="50px" />
+                            <Skeleton h="10px" w="130px" />
+                          </VStack>
+
+                          <VStack spacing={2} flex={1}>
+                            <Skeleton h="28px" w="110px" />
+                            <Skeleton h="28px" w="110px" />
+                          </VStack>
+                        </Flex>
                       </Box>
 
-                      <VStack align="start" spacing={1} fontSize="xs">
-                        <Text fontWeight="semibold" color="green.600">
-                          {item.status}
-                        </Text>
-                        <Text fontWeight="bold" fontSize="sm">
-                          {item.brand}
-                        </Text>
-                        <Text color="gray.600">{item.title}</Text>
-                        <Text fontWeight="semibold" fontSize="sm">
-                          {item.price}
-                        </Text>
-                        <Text color="gray.500">{item.size}</Text>
-                      </VStack>
+                      {i !== 1 && <Divider borderColor="gray.200" />}
+                    </Box>
+                  ))}
+                </VStack>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <VStack align="start" spacing={4} w="full">
+                    <Heading size="md">Sold</Heading>
 
-                      <VStack align="start" spacing={1} fontSize="xs">
-                        <Text fontWeight="bold" color="gray.600">
-                          Sold
+                    {error && (
+                      <Box mb={2}>
+                        <Text fontSize="sm" color="red.500">
+                          {error}
                         </Text>
-                        <Text color="gray.500">{item.date}</Text>
-                      </VStack>
+                      </Box>
+                    )}
 
-                      <VStack align="start" spacing={1} fontSize="xs">
-                        <Text fontWeight="bold" color="gray.600">
-                          Shipping Details
-                        </Text>
-                        <Text color="gray.500">
-                          This sale includes a pre-paid label
-                        </Text>
-                        <Text>{item.buyer}</Text>
-                        <Text whiteSpace="pre-wrap">{item.address}</Text>
-                      </VStack>
-
-                      <VStack
-                        spacing={2}
-                        align="stretch"
+                    {!error && sales.length === 0 && (
+                      <Box
+                        display="flex"
+                        alignItems="center"
                         justifyContent="center"
-                        pt={6}
+                        minH="40vh"
+                        w="full"
                       >
-                        <Button
-                          size="xs"
-                          variant="solid"
-                          colorScheme="blackAlpha"
-                          fontWeight="semibold"
-                          fontSize="xs"
-                        >
-                          VIEW TRACKING
-                        </Button>
-                        <Button
-                          size="xs"
-                          variant="outline"
-                          fontWeight="semibold"
-                          fontSize="xs"
-                        >
-                          ORDER DETAILS
-                        </Button>
-                      </VStack>
-                    </Grid>
-                    {index < sales.length - 1 && <Divider my={6} />}
-                  </Box>
-                ))}
-              </VStack>
+                        <Text fontSize="sm" color="gray.500">
+                          You haven&apos;t sold anything yet
+                        </Text>
+                      </Box>
+                    )}
+
+                    {!error &&
+                      sales.map((order, i) => {
+                        const listing = order.listing || {};
+                        const shippingAddress = order.shippingAddress || {};
+                        const rawPrice =
+                          order.price?.listingPrice ?? listing.price ?? 0;
+
+                        let priceValue = "0";
+                        if (typeof rawPrice === "string") priceValue = rawPrice;
+                        else if (typeof rawPrice === "number")
+                          priceValue = rawPrice.toString();
+
+                        const buyerName =
+                          shippingAddress.fullName ||
+                          order.buyer?.username ||
+                          "";
+
+                        const listingId =
+                          typeof order.listing === "string"
+                            ? order.listing
+                            : listing._id;
+
+                        const listingUrl = listingId
+                          ? `/listing/${listingId}`
+                          : "#";
+
+                        return (
+                          <Box key={order._id} w="full">
+                            <Box py={6}>
+                              <Flex w="full" align="center" gap={6}>
+                                <Flex flex={2} gap={4} align="center">
+                                  <RouterLink to={listingUrl}>
+                                    <Image
+                                      src={
+                                        listing.thumbnail ||
+                                        listing.imageUrl ||
+                                        "https://via.placeholder.com/140"
+                                      }
+                                      alt={listing.title || "Listing"}
+                                      h="140px"
+                                      w="120px"
+                                      objectFit="cover"
+                                    />
+                                  </RouterLink>
+                                  <VStack align="start" spacing={1}>
+                                    <Text
+                                      fontSize="xs"
+                                      fontWeight="semibold"
+                                      color={getStatusColor(order.status)}
+                                    >
+                                      {formatOrderStatus(order.status)}
+                                    </Text>
+                                    <Text fontWeight="bold" fontSize="xs">
+                                      {listing.designer || ""}
+                                    </Text>
+                                    <Text
+                                      as={RouterLink}
+                                      to={listingUrl}
+                                      fontSize="xs"
+                                      color="gray.600"
+                                      noOfLines={1}
+                                      maxW="260px"
+                                      _hover={{ textDecoration: "underline" }}
+                                    >
+                                      {listing.title || "Listing title"}
+                                    </Text>
+                                    <Text fontWeight="semibold" fontSize="xs">
+                                      {formatCurrency(priceValue)}
+                                    </Text>
+                                    <Text fontSize="xs" color="gray.500">
+                                      {listing.size || ""}
+                                    </Text>
+                                  </VStack>
+                                </Flex>
+
+                                <VStack
+                                  align="start"
+                                  spacing={1}
+                                  fontSize="xs"
+                                  flex={1}
+                                >
+                                  <Text fontWeight="semibold">
+                                    Shipping details
+                                  </Text>
+                                  <Text>{buyerName}</Text>
+                                  <Text whiteSpace="pre-wrap">
+                                    {formatAddress(shippingAddress)}
+                                  </Text>
+                                </VStack>
+
+                                <VStack
+                                  align="start"
+                                  spacing={1}
+                                  fontSize="xs"
+                                  flex={1}
+                                >
+                                  <Text fontWeight="semibold">Sold</Text>
+                                  <Text color="gray.500">
+                                    {order.createdAt
+                                      ? formatFullDate(order.createdAt)
+                                      : "—"}
+                                  </Text>
+                                </VStack>
+
+                                <VStack spacing={2} flex={1}>
+                                  <Button
+                                    size="xs"
+                                    variant="solid"
+                                    colorScheme="blackAlpha"
+                                    borderRadius="none"
+                                    fontWeight="semibold"
+                                    fontSize="xs"
+                                    as={RouterLink}
+                                    to={`/orders/${order._id}`}
+                                  >
+                                    View Tracking
+                                  </Button>
+                                  <Button
+                                    size="xs"
+                                    variant="outline"
+                                    borderRadius="none"
+                                    fontWeight="semibold"
+                                    fontSize="xs"
+                                    as={RouterLink}
+                                    to={`/orders/${order._id}`}
+                                  >
+                                    Order Details
+                                  </Button>
+                                </VStack>
+                              </Flex>
+                            </Box>
+
+                            {i !== sales.length - 1 && (
+                              <Divider borderColor="gray.200" />
+                            )}
+                          </Box>
+                        );
+                      })}
+                  </VStack>
+                </motion.div>
+              )}
             </GridItem>
           </Grid>
         </VStack>

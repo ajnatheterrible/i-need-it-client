@@ -102,7 +102,7 @@ export default function Notifications() {
 
           <GridItem colSpan={10}>
             <VStack align="start" spacing={10}>
-              <Text fontSize="2xl" fontWeight="bold">
+              <Text fontSize="xl" fontWeight="bold">
                 Notifications
               </Text>
 

@@ -33,6 +33,7 @@ import OfferModal from "../components/modals/OfferModal";
 import MessageModal from "../components/modals/MessageModal";
 import BroadcastOfferModal from "../components/modals/BroadcastOfferModal";
 import ListingSkeleton from "../components/skeletons/ListingSkeleton";
+import ReviewModal from "../components/modals/ReviewModal";
 
 import useAuthStore from "../store/authStore";
 import { useAuthModal } from "../context/AuthModalContext";
@@ -55,6 +56,40 @@ export default function ListingPage() {
   const [isImageOpen, setIsImageOpen] = useState(false);
   const [activeSellerOffer, setActiveSellerOffer] = useState(null);
   const [timeLeft, setTimeLeft] = useState(null);
+
+  const [listingOrderId, setListingOrderId] = useState(null);
+  const [review, setReview] = useState(null);
+  const [reviewLoading, setReviewLoading] = useState(false);
+
+  const {
+    isOpen: isOfferOpen,
+    onOpen: onOfferOpen,
+    onClose: onOfferClose,
+  } = useDisclosure();
+
+  const {
+    isOpen: isMessageOpen,
+    onOpen: onMessageOpen,
+    onClose: onMessageClose,
+  } = useDisclosure();
+
+  const {
+    isOpen: isKlarnaOpen,
+    onOpen: onKlarnaOpen,
+    onClose: onKlarnaClose,
+  } = useDisclosure();
+
+  const {
+    isOpen: isBroadcastOpen,
+    onOpen: onBroadcastOpen,
+    onClose: onBroadcastBroadcastClose,
+  } = useDisclosure();
+
+  const {
+    isOpen: isReviewOpen,
+    onOpen: onReviewOpen,
+    onClose: onReviewClose,
+  } = useDisclosure();
 
   const isViewerSeller =
     isLoggedIn && user?.username === listing?.seller?.username;
@@ -80,6 +115,13 @@ export default function ListingPage() {
   const showSellerSoldBanner = !!listing && isListingSold && isViewerSeller;
 
   const disableBuyerActions = showUnavailableBanner || showBuyerSoldBanner;
+
+  const getStarColorForRating = (star, rating) => {
+    if (!rating || star > rating) return "gray.300";
+    if (rating === 1) return "red.400";
+    if (rating === 2) return "orange.400";
+    return "green.400";
+  };
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -228,29 +270,38 @@ export default function ListingPage() {
     }, 400);
   };
 
-  const {
-    isOpen: isOfferOpen,
-    onOpen: onOfferOpen,
-    onClose: onOfferClose,
-  } = useDisclosure();
+  useEffect(() => {
+    if (!isLoggedIn || !token || !listing || !viewerIsBuyer) return;
 
-  const {
-    isOpen: isMessageOpen,
-    onOpen: onMessageOpen,
-    onClose: onMessageClose,
-  } = useDisclosure();
+    const fetchReviewForListing = async () => {
+      try {
+        setReviewLoading(true);
+        const res = await fetch(`/api/feedback/listing/${listing._id}/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-  const {
-    isOpen: isKlarnaOpen,
-    onOpen: onKlarnaOpen,
-    onClose: onKlarnaClose,
-  } = useDisclosure();
+        if (!res.ok) {
+          setListingOrderId(null);
+          setReview(null);
+          return;
+        }
 
-  const {
-    isOpen: isBroadcastOpen,
-    onOpen: onBroadcastOpen,
-    onClose: onBroadcastClose,
-  } = useDisclosure();
+        const data = await res.json();
+        setListingOrderId(data.orderId || null);
+        setReview(data.review || null);
+      } catch (err) {
+        console.error("Failed to fetch listing review", err);
+        setListingOrderId(null);
+        setReview(null);
+      } finally {
+        setReviewLoading(false);
+      }
+    };
+
+    fetchReviewForListing();
+  }, [isLoggedIn, token, listing, viewerIsBuyer]);
 
   const rotateNext = () => {
     if (listing.images.length > 1) {
@@ -312,6 +363,47 @@ export default function ListingPage() {
     ? "This listing has been removed"
     : "This listing has sold";
 
+  const bannerRating = review?.rating || 0;
+
+  const handleOpenReview = () => {
+    if (!isLoggedIn) return onOpenAuthModal("register");
+    if (!listingOrderId) return;
+    onReviewOpen();
+  };
+
+  const handleSubmitReview = async (payload) => {
+    if (!listingOrderId) {
+      throw new Error("Order not found for this listing");
+    }
+
+    const url = review
+      ? `/api/feedback/${review._id}`
+      : `/api/feedback/${listingOrderId}`;
+    const method = review ? "PUT" : "POST";
+
+    const res = await fetch(url, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    let data = null;
+    try {
+      data = await res.json();
+    } catch (e) {}
+
+    if (!res.ok) {
+      const msg = data?.message || "Failed to submit review";
+      throw new Error(msg);
+    }
+
+    setReview(data);
+    return { success: true };
+  };
+
   return (
     <>
       {isLoading && <ListingSkeleton />}
@@ -358,8 +450,12 @@ export default function ListingPage() {
                       Leave feedback on this listing
                     </Text>
                     <HStack spacing={1}>
-                      {[0, 1, 2, 3, 4].map((i) => (
-                        <StarIcon key={i} boxSize={3.5} color="gray.300" />
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <StarIcon
+                          key={star}
+                          boxSize={3.5}
+                          color={getStarColorForRating(star, bannerRating)}
+                        />
                       ))}
                     </HStack>
                   </HStack>
@@ -368,11 +464,10 @@ export default function ListingPage() {
                     variant="outline"
                     borderRadius="none"
                     colorScheme="blackAlpha"
-                    onClick={() => {
-                      if (!isLoggedIn) return onOpenAuthModal("register");
-                    }}
+                    isDisabled={reviewLoading || !listingOrderId}
+                    onClick={handleOpenReview}
                   >
-                    Leave Feedback
+                    {review ? "Edit Feedback" : "Leave Feedback"}
                   </Button>
                 </Flex>
               </Box>
@@ -866,7 +961,7 @@ export default function ListingPage() {
       />
       <BroadcastOfferModal
         isOpen={isBroadcastOpen}
-        onClose={onBroadcastClose}
+        onClose={onBroadcastBroadcastClose}
         listing={listing}
       />
 
@@ -943,6 +1038,23 @@ export default function ListingPage() {
           </Button>
         </Box>
       )}
+
+      <ReviewModal
+        isOpen={isReviewOpen}
+        onClose={onReviewClose}
+        mode={review ? "edit" : "create"}
+        initialReview={
+          review
+            ? {
+                rating: review.rating,
+                tags: review.tags || [],
+                comment: review.comment || "",
+              }
+            : null
+        }
+        onSubmit={handleSubmitReview}
+      />
+
       <Footer />
     </>
   );

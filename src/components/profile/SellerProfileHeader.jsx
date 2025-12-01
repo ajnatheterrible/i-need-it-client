@@ -14,16 +14,76 @@ import {
   PopoverBody,
   Tooltip,
   useClipboard,
+  Skeleton,
 } from "@chakra-ui/react";
-import { FaStar } from "react-icons/fa";
+import { FaStar, FaStarHalfAlt, FaRegStar } from "react-icons/fa";
 import { FiShare2, FiMapPin, FiAward, FiZap } from "react-icons/fi";
 import { Link as RouterLink } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import useAuthStore from "../../store/authStore";
+
+const getRatingColor = (rating) => {
+  if (rating <= 1) return "red.400";
+  if (rating <= 2) return "orange.400";
+  return "green.400";
+};
+
+const getStarIcon = (rating, index) => {
+  const fullStars = Math.floor(rating);
+  const hasHalfStar = rating - fullStars >= 0.5;
+
+  if (index <= fullStars) return FaStar;
+  if (index === fullStars + 1 && hasHalfStar) return FaStarHalfAlt;
+  return FaRegStar;
+};
+
+const isStarFilled = (rating, index) => {
+  const fullStars = Math.floor(rating);
+  const hasHalfStar = rating - fullStars >= 0.5;
+  return index <= fullStars || (index === fullStars + 1 && hasHalfStar);
+};
 
 export default function SellerProfileHeader() {
   const url = window.location.href;
   const { onCopy } = useClipboard(url);
   const { user } = useAuthStore();
+
+  const [stats, setStats] = useState(null);
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  useEffect(() => {
+    if (!user?._id) {
+      setLoadingStats(false);
+      return;
+    }
+
+    const fetchStats = async () => {
+      setLoadingStats(true);
+      try {
+        const res = await fetch(`/api/feedback/seller/${user._id}/stats`);
+        const data = res.ok ? await res.json() : null;
+        setStats(data);
+      } catch {
+        setStats(null);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    fetchStats();
+  }, [user?._id]);
+
+  const averageRating = stats?.ratingAverage || 0;
+  const ratingCount = stats?.ratingCount || 0;
+
+  const tagCounts = stats?.tagCounts || {};
+  const hasTrustedSeller = (tagCounts.FAST_SHIPPER || 0) >= 10;
+  const hasQuickResponder = (tagCounts.QUICK_REPLIES || 0) >= 10;
+
+  const transactionsCount = stats?.transactionsCount || 0;
+
+  const ratingColor = getRatingColor(averageRating);
 
   return (
     <Box w="full" pb={6}>
@@ -33,37 +93,41 @@ export default function SellerProfileHeader() {
             <Avatar
               size="xl"
               src="/avatar.jpg"
-              name="amnesia_"
+              name={user?.username || ""}
               bg="gray.200"
               color="gray.700"
             />
             <VStack align="start" spacing={0}>
               <HStack spacing={1}>
                 <Text fontWeight="bold" fontSize="2xl">
-                  {user.username}
+                  {user?.username || ""}
                 </Text>
-                <Tooltip
-                  label="Trusted seller"
-                  hasArrow
-                  bg="black"
-                  color="white"
-                  fontSize="xs"
-                >
-                  <span>
-                    <Icon as={FiAward} color="#6C63FF" boxSize={4} />
-                  </span>
-                </Tooltip>
-                <Tooltip
-                  label="Quick responder"
-                  hasArrow
-                  bg="black"
-                  color="white"
-                  fontSize="xs"
-                >
-                  <span>
-                    <Icon as={FiZap} color="#6C63FF" boxSize={4} />
-                  </span>
-                </Tooltip>
+                {hasTrustedSeller && (
+                  <Tooltip
+                    label="Trusted seller"
+                    hasArrow
+                    bg="black"
+                    color="white"
+                    fontSize="xs"
+                  >
+                    <span>
+                      <Icon as={FiAward} color="#6C63FF" boxSize={4} />
+                    </span>
+                  </Tooltip>
+                )}
+                {hasQuickResponder && (
+                  <Tooltip
+                    label="Quick responder"
+                    hasArrow
+                    bg="black"
+                    color="white"
+                    fontSize="xs"
+                  >
+                    <span>
+                      <Icon as={FiZap} color="#6C63FF" boxSize={4} />
+                    </span>
+                  </Tooltip>
+                )}
               </HStack>
               <Text fontSize="sm" color="gray.500">
                 Joined in 2021
@@ -80,27 +144,70 @@ export default function SellerProfileHeader() {
 
         <GridItem colSpan={6}>
           <HStack spacing={16}>
-            <VStack spacing={0} align="start">
-              <HStack spacing={1}>
-                <RouterLink to="/feedback">
-                  <Text
-                    fontWeight="semibold"
-                    _hover={{ textDecoration: "underline" }}
-                  >
-                    4.9
-                  </Text>
-                </RouterLink>
-                {[...Array(5)].map((_, i) => (
-                  <Icon key={i} as={FaStar} color="#DCEF31" boxSize={3} />
-                ))}
-              </HStack>
-              <Text fontSize="xs" color="gray.500">
-                16 reviews
-              </Text>
-            </VStack>
+            <Box>
+              {loadingStats ? (
+                <VStack spacing={0} align="start">
+                  <HStack spacing={1}>
+                    <Skeleton height="14px" width="18px" />
+                    {Array(5)
+                      .fill("")
+                      .map((_, i) => (
+                        <Skeleton key={i} boxSize={3} borderRadius="full" />
+                      ))}
+                  </HStack>
+                  <Skeleton height="12px" width="80px" mt={1} />
+                </VStack>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <VStack spacing={0} align="start">
+                    <HStack spacing={1}>
+                      <RouterLink to="/feedback">
+                        <Text
+                          fontWeight="semibold"
+                          _hover={{ textDecoration: "underline" }}
+                        >
+                          {ratingCount > 0 ? averageRating.toFixed(1) : "—"}
+                        </Text>
+                      </RouterLink>
+                      {[1, 2, 3, 4, 5].map((i) => {
+                        const StarIcon = getStarIcon(averageRating, i);
+                        const color = isStarFilled(averageRating, i)
+                          ? ratingColor
+                          : "gray.300";
+                        return (
+                          <Icon
+                            key={i}
+                            as={StarIcon}
+                            color={color}
+                            boxSize={3}
+                          />
+                        );
+                      })}
+                    </HStack>
+                    <Text fontSize="xs" color="gray.500">
+                      {ratingCount} review{ratingCount === 1 ? "" : "s"}
+                    </Text>
+                  </VStack>
+                </motion.div>
+              )}
+            </Box>
 
             <VStack spacing={0} align="center">
-              <Text fontWeight="semibold">41</Text>
+              {loadingStats ? (
+                <Skeleton height="16px" width="24px" />
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <Text fontWeight="semibold">{transactionsCount}</Text>
+                </motion.div>
+              )}
               <Text fontSize="xs" color="gray.500">
                 transactions
               </Text>

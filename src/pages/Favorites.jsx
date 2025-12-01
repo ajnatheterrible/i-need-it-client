@@ -52,7 +52,7 @@ export default function Favorites() {
       );
       setLocalFavoriteIds(ids);
     }
-  }, [fetchedFavorites]);
+  }, [fetchedFavorites, initialFavorites.length]);
 
   const sortedFavorites = useMemo(() => {
     if (!initialFavorites) return [];
@@ -159,99 +159,104 @@ export default function Favorites() {
               </Box>
             ) : (
               <AnimatePresence>
-                {sortedFavorites.map((item) => (
-                  <motion.div
-                    key={item._id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <Box overflow="hidden">
-                      <Box
-                        as={RouterLink}
-                        to={`/listing/${item._id}`}
-                        _hover={{ textDecoration: "none" }}
-                      >
-                        <Box position="relative" height="200px">
-                          <Image
-                            src={item.thumbnail}
-                            alt={item.title}
-                            height="100%"
-                            width="100%"
-                            objectFit="cover"
-                          />
-                          {item.isFreeShipping && (
-                            <Badge
-                              position="absolute"
-                              top="16px"
-                              left="8px"
-                              bg="#DCEF31"
-                              color="black"
-                              fontWeight="bold"
-                              fontSize="0.7em"
-                              px={2}
-                              py={1}
-                              borderRadius="sm"
-                            >
-                              FREE SHIPPING
-                            </Badge>
-                          )}
+                {sortedFavorites.map((item) => {
+                  const isListingArchived = item.isSold || item.isDeleted;
+
+                  return (
+                    <motion.div
+                      key={item._id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <Box overflow="hidden">
+                        <Box
+                          as={RouterLink}
+                          to={`/listing/${item._id}`}
+                          _hover={{ textDecoration: "none" }}
+                        >
+                          <Box position="relative" height="200px">
+                            <Image
+                              src={item.thumbnail}
+                              alt={item.title}
+                              height="100%"
+                              width="100%"
+                              objectFit="cover"
+                              opacity={isListingArchived ? 0.35 : 1}
+                            />
+                            {item.isFreeShipping && (
+                              <Badge
+                                position="absolute"
+                                top="16px"
+                                left="8px"
+                                bg="#DCEF31"
+                                color="black"
+                                fontWeight="bold"
+                                fontSize="0.7em"
+                                px={2}
+                                py={1}
+                                borderRadius="sm"
+                              >
+                                FREE SHIPPING
+                              </Badge>
+                            )}
+                          </Box>
+
+                          <Box p={3} pt={3} pb={0}>
+                            <Text fontSize="xs" color="gray.500">
+                              {getTimestamp(item.createdAt)}
+                            </Text>
+
+                            <Box
+                              borderBottom="1px solid"
+                              borderColor="gray.200"
+                              my={2}
+                            />
+                          </Box>
                         </Box>
 
-                        <Box p={3} pt={3} pb={0}>
-                          <Text fontSize="xs" color="gray.500">
-                            {getTimestamp(item.createdAt)}
+                        <Box px={3} pb={3}>
+                          <HStack justify="space-between" mt={1}>
+                            <Text fontWeight="bold" fontSize="sm" noOfLines={1}>
+                              {item.designer}
+                            </Text>
+                            <Text fontSize="xs" color="gray.600">
+                              {item.size}
+                            </Text>
+                          </HStack>
+
+                          <Text fontSize="xs" color="gray.600" noOfLines={1}>
+                            {item.title}
                           </Text>
 
-                          <Box
-                            borderBottom="1px solid"
-                            borderColor="gray.200"
-                            my={2}
-                          />
+                          <HStack justify="space-between" mt={4}>
+                            <Text fontSize="sm" fontWeight="bold">
+                              ${item?.price?.toLocaleString()}
+                            </Text>
+
+                            <IconButton
+                              size="sm"
+                              icon={
+                                localFavoriteIds.includes(item._id) ? (
+                                  <FaHeart color="black" />
+                                ) : (
+                                  <FaRegHeart />
+                                )
+                              }
+                              aria-label={
+                                localFavoriteIds.includes(item._id)
+                                  ? "Unfavorite"
+                                  : "Favorite"
+                              }
+                              onClick={() => handleToggleFavorite(item._id)}
+                            />
+                          </HStack>
                         </Box>
                       </Box>
-
-                      <Box px={3} pb={3}>
-                        <HStack justify="space-between" mt={1}>
-                          <Text fontWeight="bold" fontSize="sm" noOfLines={1}>
-                            {item.designer}
-                          </Text>
-                          <Text fontSize="xs" color="gray.600">
-                            {item.size}
-                          </Text>
-                        </HStack>
-
-                        <Text fontSize="xs" color="gray.600" noOfLines={1}>
-                          {item.title}
-                        </Text>
-
-                        <HStack justify="space-between" mt={4}>
-                          <Text fontSize="sm" fontWeight="bold">
-                            ${item?.price?.toLocaleString()}
-                          </Text>
-
-                          <IconButton
-                            size="sm"
-                            icon={
-                              localFavoriteIds.includes(item._id) ? (
-                                <FaHeart color="black" />
-                              ) : (
-                                <FaRegHeart />
-                              )
-                            }
-                            aria-label={
-                              localFavoriteIds.includes(item._id)
-                                ? "Unfavorite"
-                                : "Favorite"
-                            }
-                            onClick={() => handleToggleFavorite(item._id)}
-                          />
-                        </HStack>
-                      </Box>
-                    </Box>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  );
+                })}
               </AnimatePresence>
             )}
           </SimpleGrid>

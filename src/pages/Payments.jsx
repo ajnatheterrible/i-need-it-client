@@ -63,7 +63,7 @@ export default function Payments() {
                 transition={{ duration: 0.25 }}
               >
                 <VStack align="start" spacing={6} w="full">
-                  <Text fontSize="2xl" fontWeight="bold">
+                  <Text fontSize="xl" fontWeight="bold">
                     Payments
                   </Text>
 
