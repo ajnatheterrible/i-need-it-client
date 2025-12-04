@@ -15,7 +15,6 @@ const navLinks = [
     items: [
       { label: "FEEDBACK", path: "/feedback" },
       { label: "PAYMENTS", path: "/payments-seller" },
-      { label: "SETTINGS", path: "/settings-seller" },
     ],
   },
 ];

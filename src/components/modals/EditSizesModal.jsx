@@ -134,6 +134,7 @@ export default function EditSizesModal({ isOpen, onClose }) {
             {options.map((size) => (
               <Checkbox
                 key={size}
+                colorScheme="gray"
                 isChecked={(sizes[department]?.[category] || []).includes(size)}
                 onChange={() => toggleSize(department, category, size)}
               >

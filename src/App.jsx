@@ -31,7 +31,6 @@ import Feedback from "./pages/static/Feedback";
 import Drafts from "./pages/Drafts";
 import Sold from "./pages/Sold";
 import PaymentsSeller from "./pages/PaymentsSeller";
-import SellerSettings from "./pages/SellerSettings";
 import UserLayout from "./components/profile/UserLayout";
 import UserFavorites from "./pages/UserFavorites";
 import UserReviews from "./pages/UserReviews";
@@ -84,7 +83,6 @@ export default function App() {
             <Route path="drafts" element={<Drafts />} />
             <Route path="drafts/skeleton" element={<DraftsSkeleton />} />
             <Route path="payments-seller" element={<PaymentsSeller />} />
-            <Route path="settings-seller" element={<SellerSettings />} />
             <Route path="confirmation/:id" element={<ConfirmationPage />} />
             <Route path="orders/:orderId" element={<OrderDetails />} />
           </Route>

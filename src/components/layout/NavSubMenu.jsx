@@ -1,7 +1,6 @@
 import { Box, HStack, Link as ChakraLink } from "@chakra-ui/react";
 import { ChevronDownIcon } from "@chakra-ui/icons";
 import { useRef, useState, useEffect } from "react";
-import { Link as RouterLink } from "react-router-dom";
 
 import MenuDropdown from "../shared/MenuDropdown";
 import Container from "../shared/Container";
@@ -13,14 +12,15 @@ const navLinks = [
   { label: "DESIGNERS", key: "designers" },
   { label: "MENSWEAR", key: "menswear" },
   { label: "WOMENSWEAR", key: "womenswear" },
-  { label: "SNEAKERS", key: "sneakers", path: "/sneakers" },
-  { label: "EDITORIAL", key: "editorial", path: "/editorial" },
-  { label: "COLLECTIONS", key: "collections", path: "/collections" },
+  { label: "SNEAKERS", key: "sneakers" },
+  { label: "EDITORIAL", key: "editorial" },
+  { label: "COLLECTIONS", key: "collections" },
 ];
 
 const menswearItems = Object.entries(categoryMap["Menswear"]).map(
   ([heading, items]) => ({ heading, items })
 );
+
 const womenswearItems = Object.entries(categoryMap["Womenswear"])
   .filter(([heading]) => heading !== "Jewelry")
   .map(([heading, items]) => ({
@@ -61,7 +61,6 @@ export default function NavSubMenu() {
 
   return (
     <>
-      {" "}
       <Container>
         <HStack
           justify="space-between"
@@ -69,7 +68,7 @@ export default function NavSubMenu() {
           fontSize="xs"
           fontWeight="semibold"
         >
-          {navLinks.map(({ label, key, path }) => {
+          {navLinks.map(({ label, key }) => {
             const isDropdown =
               key === "designers" || key === "menswear" || key === "womenswear";
 
@@ -100,8 +99,9 @@ export default function NavSubMenu() {
             return (
               <ChakraLink
                 key={key}
-                as={RouterLink}
-                to={path}
+                href="#"
+                onClick={(e) => e.preventDefault()}
+                cursor="pointer"
                 _hover={{ textDecoration: "underline" }}
               >
                 {label}
@@ -125,7 +125,7 @@ export default function NavSubMenu() {
         title="Shop by Category"
         items={menswearItems}
         columns={4}
-        seeAllHref="/menswear"
+        seeAllHref="#"
         ref={refs.menswear.dropdown}
         onClose={() => setActiveMenu(null)}
         seeAllLabel="Categories"
@@ -135,7 +135,7 @@ export default function NavSubMenu() {
         title="Shop by Category"
         items={womenswearItems}
         columns={4}
-        seeAllHref="/womenswear"
+        seeAllHref="#"
         ref={refs.womenswear.dropdown}
         onClose={() => setActiveMenu(null)}
         seeAllLabel="Categories"

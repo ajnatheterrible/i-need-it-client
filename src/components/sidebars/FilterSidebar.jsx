@@ -120,6 +120,7 @@ export default function FilterSidebar({
                     : onOpenAuthModal("register")
                 }
                 isDisabled={!query && mode === "search"}
+                colorScheme="gray"
               />
             </HStack>
             <Text fontSize="sm" color="gray.600" mt={2}>
