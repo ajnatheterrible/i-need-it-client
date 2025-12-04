@@ -144,7 +144,6 @@ export default function PaymentsSeller() {
           </Grid>
         </VStack>
       </Container>
-      <Footer />
     </>
   );
 }

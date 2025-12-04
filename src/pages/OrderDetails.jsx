@@ -10,6 +10,7 @@ import {
   HStack,
   Grid,
   useDisclosure,
+  Tag,
 } from "@chakra-ui/react";
 import { CheckIcon } from "@chakra-ui/icons";
 import { PuffLoader } from "react-spinners";
@@ -22,6 +23,7 @@ import useAuthStore from "../store/authStore";
 import formatFullDate from "../utils/formatFullDate";
 import useFetchOrder from "../hooks/useFetchOrder";
 import ReviewModal from "../components/modals/ReviewModal";
+import IssueRefundModal from "../components/modals/RefundModal";
 
 const MotionFlex = motion(Flex);
 const MotionText = motion(Text);
@@ -32,6 +34,9 @@ export default function OrderDetailsPage() {
   const { orderId } = useParams();
   const navigate = useNavigate();
   const { order, loading, error } = useFetchOrder(orderId);
+  const [localOrder, setLocalOrder] = useState(null);
+  const effectiveOrder = localOrder || order || null;
+
   const [orderStatus, setOrderStatus] = useState(null);
   const token = useAuthStore((s) => s.token);
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
@@ -46,6 +51,12 @@ export default function OrderDetailsPage() {
     onClose: onReviewClose,
   } = useDisclosure();
 
+  const {
+    isOpen: isRefundOpen,
+    onOpen: onRefundOpen,
+    onClose: onRefundClose,
+  } = useDisclosure();
+
   const formatPrice = (value) => {
     if (value == null || isNaN(value)) return "$0.00";
     const num = Number(value);
@@ -57,7 +68,7 @@ export default function OrderDetailsPage() {
     if (val === "DELIVERED") return 2;
     if (val === "IN TRANSIT") return 1;
     if (val === "SHIPPED") return 0;
-    return 0;
+    return -1;
   };
 
   useEffect(() => {
@@ -66,8 +77,61 @@ export default function OrderDetailsPage() {
     }
   }, [loading, error, order, navigate]);
 
+  const {
+    shippingAddress,
+    createdAt,
+    status,
+    seller,
+    buyer,
+    price,
+    statusHistory = [],
+    escrow,
+    trackingNumber,
+    refund,
+    total_cents,
+  } = effectiveOrder || {};
+
+  const viewerUserId = currentUser?._id;
+  const sellerId = seller && typeof seller === "object" ? seller._id : seller;
+  const buyerId = buyer && typeof buyer === "object" ? buyer._id : buyer;
+
+  const viewerIsSeller =
+    !!viewerUserId && !!sellerId && String(sellerId) === String(viewerUserId);
+  const viewerIsBuyer =
+    !!viewerUserId && !!buyerId && String(buyerId) === String(viewerUserId);
+
+  const baseStatus = (orderStatus || status || "").toUpperCase();
+
+  const hasRefund = !!refund && !!refund.issuedAt;
+  const totalCents = typeof total_cents === "number" ? total_cents : 0;
+  const isFullRefund =
+    hasRefund &&
+    refund.mode === "full" &&
+    typeof refund.amount_cents === "number" &&
+    refund.amount_cents >= totalCents;
+  const isPartialRefund = hasRefund && !isFullRefund;
+
+  const wasDelivered =
+    (status || "").toUpperCase() === "DELIVERED" ||
+    statusHistory.some((h) => (h.status || "").toUpperCase() === "DELIVERED");
+  const refundedBeforeDelivery = hasRefund && !wasDelivered;
+  const escrowReleased = (escrow?.status || "").toUpperCase() === "RELEASED";
+
   useEffect(() => {
-    if (!order || !order.status) return;
+    if (!order || !order.status || !viewerIsBuyer) return;
+
+    const base = (order.status || "").toUpperCase();
+    const eligible = ["PAID", "SHIPPED", "IN TRANSIT", "DELIVERED"];
+    if (!eligible.includes(base)) return;
+
+    const wasRefunded = !!order.refund && !!order.refund.issuedAt;
+    const delivered =
+      base === "DELIVERED" ||
+      (order.statusHistory || []).some(
+        (h) => (h.status || "").toUpperCase() === "DELIVERED"
+      );
+
+    if (wasRefunded && !delivered) return;
 
     const triggerBackendSimulation = async () => {
       try {
@@ -95,28 +159,7 @@ export default function OrderDetailsPage() {
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [orderId, token, order]);
-
-  const {
-    shippingAddress,
-    createdAt,
-    status,
-    seller,
-    buyer,
-    price,
-    statusHistory = [],
-    escrow,
-    trackingNumber,
-  } = order || {};
-
-  const viewerUserId = currentUser?._id;
-  const sellerId = seller && typeof seller === "object" ? seller._id : seller;
-  const buyerId = buyer && typeof buyer === "object" ? buyer._id : buyer;
-
-  const viewerIsSeller =
-    !!viewerUserId && !!sellerId && String(sellerId) === String(viewerUserId);
-  const viewerIsBuyer =
-    !!viewerUserId && !!buyerId && String(buyerId) === String(viewerUserId);
+  }, [orderId, token, order, viewerIsBuyer]);
 
   useEffect(() => {
     if (!isLoggedIn || !token || !order || !viewerIsBuyer) return;
@@ -161,7 +204,16 @@ export default function OrderDetailsPage() {
   const shippingTaxDeduction = shippingTaxCents / 100;
   const netEarnings = netCents / 100;
 
-  if (loading) {
+  const refundedAmount = hasRefund ? (refund.amount_cents || 0) / 100 : 0;
+  const sellerDebit = hasRefund ? (refund.sellerDebit_cents || 0) / 100 : 0;
+
+  const sellerFinalNet = hasRefund
+    ? escrowReleased
+      ? Math.max(0, netEarnings - sellerDebit)
+      : 0
+    : netEarnings;
+
+  if (loading || !effectiveOrder) {
     return (
       <Box
         display="flex"
@@ -175,17 +227,20 @@ export default function OrderDetailsPage() {
     );
   }
 
-  if (error || !order) {
+  if (error || !effectiveOrder) {
     return null;
   }
 
-  const listing = order?.listing || order?.listingSnapshot || {};
-  const buyerStepIndex = buyerStepIndexFromStatus(orderStatus || status);
-  const baseStatus = (orderStatus || status || "").toUpperCase();
+  const listing =
+    effectiveOrder?.listing || effectiveOrder?.listingSnapshot || {};
+  const buyerStepIndex = refundedBeforeDelivery
+    ? -1
+    : buyerStepIndexFromStatus(orderStatus || status);
 
-  let sellerStepIndex = 0;
+  let sellerStepIndex = -1;
+  if (baseStatus === "SHIPPED") sellerStepIndex = 0;
   if (baseStatus === "DELIVERED") sellerStepIndex = 1;
-  if (escrow?.status === "RELEASED") sellerStepIndex = 2;
+  if (escrowReleased) sellerStepIndex = 2;
 
   const currentStep = viewerIsSeller ? sellerStepIndex : buyerStepIndex;
 
@@ -285,6 +340,52 @@ export default function OrderDetailsPage() {
         },
       ];
 
+  const maxRefundAmount = total || 0;
+
+  const handleIssueRefund = async (payload) => {
+    try {
+      const res = await fetch(`/api/orders/${orderId}/refund`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      let data = null;
+      try {
+        data = await res.json();
+      } catch (e) {}
+
+      if (!res.ok) {
+        const msg =
+          data?.message ||
+          "Something went wrong while issuing the refund. Please try again.";
+        return { success: false, error: msg };
+      }
+
+      if (data && data.order) {
+        setLocalOrder((prev) => {
+          const base = prev || order || {};
+          return {
+            ...base,
+            ...data.order,
+            listing: data.order.listing || base.listing,
+            listingSnapshot: data.order.listingSnapshot || base.listingSnapshot,
+          };
+        });
+      }
+
+      return { success: true };
+    } catch (err) {
+      const msg =
+        err?.message ||
+        "Something went wrong while issuing the refund. Please try again.";
+      return { success: false, error: msg };
+    }
+  };
+
   return (
     <>
       <Container>
@@ -293,9 +394,18 @@ export default function OrderDetailsPage() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.25 }}
         >
-          <Heading mb={6} mt={10} size="lg">
-            Order details
-          </Heading>
+          <Flex mb={6} mt={10} align="center" justify="space-between">
+            <Heading size="lg">Order details</Heading>
+            {hasRefund && (
+              <Tag
+                size="sm"
+                variant="subtle"
+                colorScheme={isFullRefund ? "red" : "yellow"}
+              >
+                {isFullRefund ? "Refunded" : "Partially refunded"}
+              </Tag>
+            )}
+          </Flex>
           <Grid
             templateColumns={{ base: "1fr", lg: "2fr 1.05fr" }}
             gap={{ base: 10, lg: 24 }}
@@ -334,7 +444,7 @@ export default function OrderDetailsPage() {
                 </HStack>
                 <Button
                   as={RouterLink}
-                  to={`/listing/${listing?._id || order?.listing}`}
+                  to={`/listing/${listing?._id || effectiveOrder?.listing}`}
                   size="xs"
                   variant="outline"
                   borderRadius="none"
@@ -519,8 +629,8 @@ export default function OrderDetailsPage() {
                 </Text>
                 {!viewerIsSeller && (
                   <Text color="gray.600" fontSize="xs">
-                    {order?.shippingFrom
-                      ? `Ships from ${order.shippingFrom}`
+                    {effectiveOrder?.shippingFrom
+                      ? `Ships from ${effectiveOrder.shippingFrom}`
                       : "Ships from"}
                   </Text>
                 )}
@@ -558,12 +668,38 @@ export default function OrderDetailsPage() {
                     )}
                     <Flex justify="space-between" fontWeight="semibold" mt={2}>
                       <Text fontWeight="bold" fontSize="md">
-                        Total earnings (USD)
+                        {hasRefund && escrowReleased
+                          ? "Net after refund (USD)"
+                          : "Total earnings (USD)"}
                       </Text>
-                      <Text fontSize="md" fontWeight="bold" color="green.500">
-                        {formatPrice(netEarnings)}
+                      <Text
+                        fontSize="md"
+                        fontWeight="bold"
+                        color={!hasRefund ? "green.500" : "gray.800"}
+                      >
+                        {formatPrice(sellerFinalNet)}
                       </Text>
                     </Flex>
+                    {hasRefund && (
+                      <VStack align="stretch" spacing={1} mt={2} fontSize="xs">
+                        <Flex justify="space-between">
+                          <Text color="gray.600">Refunded to buyer</Text>
+                          <Text fontWeight="semibold" color="red.500">
+                            -{formatPrice(refundedAmount)}
+                          </Text>
+                        </Flex>
+                        {sellerDebit > 0 && (
+                          <Flex justify="space-between">
+                            <Text color="gray.600">
+                              Debited from your wallet
+                            </Text>
+                            <Text fontWeight="semibold" color="red.500">
+                              -{formatPrice(sellerDebit)}
+                            </Text>
+                          </Flex>
+                        )}
+                      </VStack>
+                    )}
                   </VStack>
                 ) : (
                   <VStack spacing={1} align="stretch" fontSize="sm">
@@ -589,6 +725,20 @@ export default function OrderDetailsPage() {
                         {formatPrice(total)}
                       </Text>
                     </Flex>
+                    {hasRefund && (
+                      <VStack align="stretch" spacing={1} mt={2} fontSize="xs">
+                        <Flex justify="space-between">
+                          <Text color="gray.600">
+                            {isFullRefund
+                              ? "Refunded to you"
+                              : "Partial refund to you"}
+                          </Text>
+                          <Text fontWeight="semibold" color="red.500">
+                            -{formatPrice(refundedAmount)}
+                          </Text>
+                        </Flex>
+                      </VStack>
+                    )}
                   </VStack>
                 )}
 
@@ -615,20 +765,23 @@ export default function OrderDetailsPage() {
                       >
                         Edit Tracking
                       </MotionButton>
-                      <MotionButton
-                        variant="outline"
-                        borderRadius="none"
-                        fontWeight="bold"
-                        initial={false}
-                        animate={{ opacity: 1 }}
-                        transition={{
-                          duration: 0.5,
-                          ease: "easeOut",
-                          delay: 0.05,
-                        }}
-                      >
-                        Issue Refund
-                      </MotionButton>
+                      {!hasRefund && (
+                        <MotionButton
+                          variant="outline"
+                          borderRadius="none"
+                          fontWeight="bold"
+                          initial={false}
+                          animate={{ opacity: 1 }}
+                          transition={{
+                            duration: 0.5,
+                            ease: "easeOut",
+                            delay: 0.05,
+                          }}
+                          onClick={onRefundOpen}
+                        >
+                          Issue Refund
+                        </MotionButton>
+                      )}
                       <MotionButton
                         variant="outline"
                         borderRadius="none"
@@ -672,20 +825,22 @@ export default function OrderDetailsPage() {
                       >
                         {review ? "Edit Feedback" : "Leave Feedback"}
                       </MotionButton>
-                      <MotionButton
-                        variant="outline"
-                        borderRadius="none"
-                        fontWeight="bold"
-                        initial={false}
-                        animate={{ opacity: 1 }}
-                        transition={{
-                          duration: 0.5,
-                          ease: "easeOut",
-                          delay: 0.15,
-                        }}
-                      >
-                        Resell
-                      </MotionButton>
+                      {!isFullRefund && (
+                        <MotionButton
+                          variant="outline"
+                          borderRadius="none"
+                          fontWeight="bold"
+                          initial={false}
+                          animate={{ opacity: 1 }}
+                          transition={{
+                            duration: 0.5,
+                            ease: "easeOut",
+                            delay: 0.15,
+                          }}
+                        >
+                          Resell
+                        </MotionButton>
+                      )}
                     </>
                   )}
                 </VStack>
@@ -709,7 +864,12 @@ export default function OrderDetailsPage() {
         }
         onSubmit={handleSubmitReview}
       />
-      <Footer />
+      <IssueRefundModal
+        isOpen={isRefundOpen}
+        onClose={onRefundClose}
+        maxRefundAmount={maxRefundAmount}
+        onSubmit={handleIssueRefund}
+      />
     </>
   );
 }

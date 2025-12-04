@@ -22,7 +22,6 @@ export default function NotFound() {
           objectFit="contain"
         />
       </Flex>
-      <Footer />
     </Flex>
   );
 }

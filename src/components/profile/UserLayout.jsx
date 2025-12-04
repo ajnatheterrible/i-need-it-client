@@ -13,7 +13,6 @@ export default function UserLayout() {
           <Outlet />
         </Box>
       </Container>
-      <Footer />
     </>
   );
 }

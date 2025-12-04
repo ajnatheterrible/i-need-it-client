@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Grid,
@@ -22,6 +22,7 @@ import SellerSidebar from "../components/sidebars/SellerSidebar";
 import SellerProfileHeader from "../components/profile/SellerProfileHeader";
 import ForSaleSkeleton from "../components/skeletons/ForSaleSkeleton";
 import BroadcastOfferModal from "../components/modals/BroadcastOfferModal";
+import PriceDropModal from "../components/modals/PriceDropModal";
 
 import useAuthStore from "../store/authStore";
 import useFetchForSale from "../hooks/useFetchForSale";
@@ -29,6 +30,7 @@ import getTimestamp from "../utils/getTimestamp";
 
 export default function ForSale() {
   const { loading } = useFetchForSale();
+  const token = useAuthStore((s) => s.token);
   const forSale = useAuthStore((s) => s.fetchedData?.forSale);
 
   const {
@@ -36,11 +38,77 @@ export default function ForSale() {
     onOpen: onOfferOpen,
     onClose: onOfferClose,
   } = useDisclosure();
-  const [selectedListing, setSelectedListing] = useState(null);
+  const {
+    isOpen: isPriceOpen,
+    onOpen: onPriceOpen,
+    onClose: onPriceClose,
+  } = useDisclosure();
+
+  const [selectedListingForOffer, setSelectedListingForOffer] = useState(null);
+  const [selectedListingForPriceDrop, setSelectedListingForPriceDrop] =
+    useState(null);
+  const [items, setItems] = useState([]);
+
+  useEffect(() => {
+    if (Array.isArray(forSale)) {
+      setItems(forSale);
+    } else {
+      setItems([]);
+    }
+  }, [forSale]);
 
   const openOfferModal = (listing) => {
-    setSelectedListing(listing);
+    setSelectedListingForOffer(listing);
     onOfferOpen();
+  };
+
+  const openPriceDropModal = (listing) => {
+    setSelectedListingForPriceDrop(listing);
+    onPriceOpen();
+  };
+
+  const handlePriceDropSubmit = async ({ newPrice, discountPercent }) => {
+    if (!selectedListingForPriceDrop || !token) {
+      return { success: false, error: "Missing data" };
+    }
+
+    const res = await fetch("/api/orders/price-drop", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        listingId: selectedListingForPriceDrop._id,
+        newPrice,
+        discountPercent,
+      }),
+    });
+
+    let data = null;
+    try {
+      data = await res.json();
+    } catch (e) {
+      data = null;
+    }
+
+    if (!res.ok) {
+      return {
+        success: false,
+        error: data?.message || "Failed to update price",
+      };
+    }
+
+    const updatedListing = data?.listing;
+    if (updatedListing && updatedListing._id) {
+      setItems((prev) =>
+        prev.map((l) =>
+          l._id === updatedListing._id ? { ...l, ...updatedListing } : l
+        )
+      );
+    }
+
+    return { success: true };
   };
 
   return (
@@ -62,7 +130,7 @@ export default function ForSale() {
 
                 {loading ? (
                   <ForSaleSkeleton />
-                ) : !forSale?.length ? (
+                ) : !items.length ? (
                   <Box
                     as={motion.div}
                     w="full"
@@ -86,7 +154,7 @@ export default function ForSale() {
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.3 }}
                   >
-                    {forSale.map((item) => (
+                    {items.map((item) => (
                       <Box key={item._id} overflow="hidden" mb={6}>
                         <HStack align="start" spacing={0}>
                           <Box
@@ -158,6 +226,7 @@ export default function ForSale() {
                             borderRadius="none"
                             fontSize="xs"
                             w="100%"
+                            onClick={() => openPriceDropModal(item)}
                           >
                             Price Drop
                           </Button>
@@ -191,15 +260,26 @@ export default function ForSale() {
         </VStack>
       </Container>
 
-      {selectedListing && (
+      {selectedListingForOffer && (
         <BroadcastOfferModal
           isOpen={isOfferOpen}
           onClose={onOfferClose}
-          listing={selectedListing}
+          listing={selectedListingForOffer}
         />
       )}
 
-      <Footer />
+      {selectedListingForPriceDrop && (
+        <PriceDropModal
+          isOpen={isPriceOpen}
+          onClose={() => {
+            onPriceClose();
+            setSelectedListingForPriceDrop(null);
+          }}
+          listing={selectedListingForPriceDrop}
+          currentPrice={selectedListingForPriceDrop.price}
+          onSubmit={handlePriceDropSubmit}
+        />
+      )}
     </>
   );
 }

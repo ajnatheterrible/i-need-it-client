@@ -143,7 +143,6 @@ export default function About() {
           </VStack>
         </VStack>
       </Container>
-      <Footer />
     </>
   );
 }

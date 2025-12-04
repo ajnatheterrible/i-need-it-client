@@ -262,7 +262,6 @@ export default function Favorites() {
           </SimpleGrid>
         </Box>
       </Container>
-      <Footer />
     </>
   );
 }

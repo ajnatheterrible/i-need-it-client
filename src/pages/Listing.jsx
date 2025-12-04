@@ -1054,8 +1054,6 @@ export default function ListingPage() {
         }
         onSubmit={handleSubmitReview}
       />
-
-      <Footer />
     </>
   );
 }

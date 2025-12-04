@@ -120,7 +120,6 @@ export default function ConfirmEmailChange() {
           </Box>
         </Container>
       </Box>
-      <Footer />
     </Box>
   );
 }

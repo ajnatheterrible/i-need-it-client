@@ -24,22 +24,34 @@ import useAuthStore from "../store/authStore";
 import { formatCurrency } from "../utils/priceUtils";
 import formatFullDate from "../utils/formatFullDate";
 
-const formatOrderStatus = (status) => {
+const formatOrderStatus = (order) => {
+  const status = (order?.status || "").toString().toUpperCase();
+  const hasRefund = !!order?.refund?.issuedAt;
+  const refundMode = (order?.refund?.mode || "").toLowerCase();
+
+  if (hasRefund && status === "DELIVERED") {
+    if (refundMode === "partial") return "Partially refunded";
+    return "Refunded";
+  }
+
   if (!status) return "Paid";
-  const val = status.toUpperCase();
+  if (status === "PAID") return "Ready to ship";
+  if (status === "SHIPPED") return "Shipped";
+  if (status === "DELIVERED") return "Paid to your bank";
+  if (status === "CANCELED" || status === "CANCELLED") return "Canceled";
 
-  if (val === "PAID") return "Ready to ship";
-  if (val === "SHIPPED") return "Shipped";
-  if (val === "DELIVERED") return "Paid to your bank";
-  if (val === "REFUNDED") return "Refunded";
-
-  return val.charAt(0) + val.slice(1).toLowerCase();
+  return status.charAt(0) + status.slice(1).toLowerCase();
 };
 
-const getStatusColor = (status) => {
-  const val = (status || "").toUpperCase();
-  if (val === "PAID") return "orange.400";
-  if (val === "DELIVERED" || val === "REFUNDED") return "green.600";
+const getStatusColor = (order) => {
+  const status = (order?.status || "").toString().toUpperCase().trim();
+  const hasRefund = !!order?.refund?.issuedAt;
+
+  if (hasRefund && status === "DELIVERED") return "red.500";
+  if (!status) return "green.600";
+  if (status === "PAID") return "orange.400";
+  if (status === "SHIPPED" || status === "DELIVERED") return "green.600";
+
   return "green.600";
 };
 
@@ -228,6 +240,9 @@ export default function Sold() {
                           ? `/listing/${listingId}`
                           : "#";
 
+                        const statusLabel = formatOrderStatus(order);
+                        const statusColor = getStatusColor(order);
+
                         return (
                           <Box key={order._id} w="full">
                             <Box py={6}>
@@ -250,9 +265,9 @@ export default function Sold() {
                                     <Text
                                       fontSize="xs"
                                       fontWeight="semibold"
-                                      color={getStatusColor(order.status)}
+                                      color={statusColor}
                                     >
-                                      {formatOrderStatus(order.status)}
+                                      {statusLabel}
                                     </Text>
                                     <Text fontWeight="bold" fontSize="xs">
                                       {listing.designer || ""}
@@ -347,7 +362,6 @@ export default function Sold() {
           </Grid>
         </VStack>
       </Container>
-      <Footer />
     </>
   );
 }

@@ -95,7 +95,6 @@ export default function Privacy() {
           </Text>
         </VStack>
       </Container>
-      <Footer />
     </>
   );
 }
