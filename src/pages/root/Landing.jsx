@@ -38,7 +38,6 @@ const Landing = () => {
           </Flex>
         </VStack>
       </Container>
-      <Footer />
     </>
   );
 };

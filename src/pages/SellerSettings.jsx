@@ -114,7 +114,6 @@ export default function SellerSettings() {
           </Grid>
         </VStack>
       </Container>
-      <Footer />
     </>
   );
 }

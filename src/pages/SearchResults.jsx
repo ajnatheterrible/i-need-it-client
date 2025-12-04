@@ -315,7 +315,6 @@ export default function SearchResults() {
           </Box>
         </Flex>
       </Container>
-      <Footer />
     </>
   );
 }

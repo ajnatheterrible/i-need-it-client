@@ -7,6 +7,7 @@ import OfferCard from "./OfferCard";
 import OrderCreatedCard from "./OrderCreatedCard";
 import PayoutReleasedCard from "./PayoutReleasedCard";
 import OrderUpdateCard from "./OrderUpdateCard";
+import RefundIssuedCard from "./RefundIssueCard";
 
 const toId = (v) => (v && typeof v === "object" ? v._id || v.id : v);
 
@@ -26,10 +27,17 @@ export default function SystemMessage({ message, onNewMessage }) {
 
   if (system?.event === "payout_released" && !viewerIsSeller) return null;
 
+  const refundAmountCents =
+    typeof data.amount_cents === "number" ? data.amount_cents : null;
+
   const amount = snapshot.amount_cents
     ? formatCentsToDollars(snapshot.amount_cents)
-    : data.total_cents || data.net_cents
-    ? formatCentsToDollars(data.total_cents || data.net_cents)
+    : refundAmountCents != null
+    ? formatCentsToDollars(refundAmountCents)
+    : typeof data.total_cents === "number"
+    ? formatCentsToDollars(data.total_cents)
+    : typeof data.net_cents === "number"
+    ? formatCentsToDollars(data.net_cents)
     : "$—";
 
   let content;
@@ -60,6 +68,17 @@ export default function SystemMessage({ message, onNewMessage }) {
           event={system.event}
           data={data}
           viewerIsSeller={viewerIsSeller}
+        />
+      );
+      break;
+
+    case "refund_issued":
+      content = (
+        <RefundIssuedCard
+          data={data}
+          viewerIsSeller={viewerIsSeller}
+          viewerIsBuyer={viewerIsBuyer}
+          amount={amount}
         />
       );
       break;

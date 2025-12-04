@@ -136,7 +136,6 @@ export default function Designers() {
           ))}
         </VStack>
       </Container>
-      <Footer />
     </>
   );
 }

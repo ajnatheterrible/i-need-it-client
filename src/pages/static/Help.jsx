@@ -155,7 +155,6 @@ export default function Help() {
           </Box>
         </VStack>
       </Container>
-      <Footer />
     </>
   );
 }

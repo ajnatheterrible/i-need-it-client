@@ -207,7 +207,6 @@ export default function ConfirmationPage() {
           </VStack>
         </Box>
       </Container>
-      <Footer />
     </>
   );
 }

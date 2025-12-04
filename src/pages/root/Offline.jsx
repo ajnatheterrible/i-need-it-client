@@ -22,7 +22,6 @@ export default function OfflinePage() {
             Please check your internet connection and try again.
           </Text>
         </Flex>
-        <Footer />
       </Flex>
     </>
   );

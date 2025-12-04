@@ -19,7 +19,6 @@ import { InfoOutlineIcon, SmallCloseIcon } from "@chakra-ui/icons";
 import { motion } from "framer-motion";
 
 import Container from "../../components/shared/Container";
-import Footer from "../../components/layout/Footer";
 import AccountSidebar from "../../components/sidebars/AccountSidebar";
 import AddressModal from "../../components/modals/AddressModal";
 
@@ -87,19 +86,20 @@ export default function Addresses() {
             <AccountSidebar />
           </GridItem>
 
-          <GridItem colSpan={8}>
+          <GridItem colSpan={8} display="flex" flexDirection="column">
             {loading ? (
               <Box
+                flex="1"
                 display="flex"
                 alignItems="center"
                 justifyContent="center"
-                minH="60vh"
                 w="full"
               >
                 <Spinner size="xl" thickness="4px" color="gray.300" />
               </Box>
             ) : (
               <motion.div
+                style={{ width: "100%" }}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.25 }}
@@ -221,7 +221,7 @@ export default function Addresses() {
           </GridItem>
         </Grid>
       </Container>
-      <Footer />
+
       <AddressModal
         isOpen={isOpen}
         onClose={() => {

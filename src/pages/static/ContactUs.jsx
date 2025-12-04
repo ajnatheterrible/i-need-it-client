@@ -80,7 +80,6 @@ export default function Contact() {
           </VStack>
         </VStack>
       </Container>
-      <Footer />
     </>
   );
 }

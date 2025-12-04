@@ -20,7 +20,6 @@ import useAuthStore from "../../store/authStore";
 import { useState, useEffect } from "react";
 
 import Container from "../../components/shared/Container";
-import Footer from "../../components/layout/Footer";
 import AccountSidebar from "../../components/sidebars/AccountSidebar";
 import CustomSelect from "../../components/ui/CustomSelect";
 
@@ -355,26 +354,27 @@ export default function ProfileSettings() {
   };
 
   return (
-    <>
-      <Container>
-        <Grid templateColumns="repeat(12, 1fr)" gap={6} py={10}>
-          <GridItem colSpan={2} as="nav">
-            <AccountSidebar />
-          </GridItem>
+    <Container>
+      <Grid templateColumns="repeat(12, 1fr)" gap={6} py={10}>
+        <GridItem colSpan={2} as="nav">
+          <AccountSidebar />
+        </GridItem>
 
-          <GridItem colSpan={8}>
-            {loading ? (
-              <Box
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                minH="60vh"
-                w="full"
-              >
-                <Spinner size="xl" thickness="4px" color="gray.300" />
-              </Box>
-            ) : (
+        <GridItem colSpan={8} display="flex" flexDirection="column">
+          {loading ? (
+            <Box
+              flex="1"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              w="full"
+            >
+              <Spinner size="xl" thickness="4px" color="gray.300" />
+            </Box>
+          ) : (
+            <>
               <motion.div
+                style={{ width: "100%" }}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.25 }}
@@ -604,36 +604,36 @@ export default function ProfileSettings() {
                   </Button>
                 </VStack>
               </motion.div>
-            )}
-            <Box
-              w="full"
-              display="flex"
-              justifyContent="center"
-              minH="24px"
-              mt={3}
-            >
-              <AnimatePresence mode="wait">
-                {showSuccessMessage && (
-                  <motion.div
-                    key="profile-success"
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -5 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <Text color="green.500" fontSize="sm" fontWeight="bold">
-                      Changes saved
-                    </Text>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </Box>
-          </GridItem>
 
-          <GridItem colSpan={2} />
-        </Grid>
-      </Container>
-      <Footer />
-    </>
+              <Box
+                w="full"
+                display="flex"
+                justifyContent="center"
+                minH="24px"
+                mt={3}
+              >
+                <AnimatePresence mode="wait">
+                  {showSuccessMessage && (
+                    <motion.div
+                      key="profile-success"
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -5 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <Text color="green.500" fontSize="sm" fontWeight="bold">
+                        Changes saved
+                      </Text>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </Box>
+            </>
+          )}
+        </GridItem>
+
+        <GridItem colSpan={2} />
+      </Grid>
+    </Container>
   );
 }

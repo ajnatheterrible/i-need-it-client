@@ -7,11 +7,9 @@ import {
   HStack,
   Switch,
   Divider,
-  Checkbox,
   Link,
 } from "@chakra-ui/react";
 import Container from "../components/shared/Container";
-import Footer from "../components/layout/Footer";
 import AccountSidebar from "../components/sidebars/AccountSidebar";
 
 const notifications = [
@@ -93,64 +91,61 @@ const notifications = [
 
 export default function Notifications() {
   return (
-    <>
-      <Container>
-        <Grid templateColumns="repeat(12, 1fr)" gap={6} py={10}>
-          <GridItem colSpan={2}>
-            <AccountSidebar />
-          </GridItem>
+    <Container>
+      <Grid templateColumns="repeat(12, 1fr)" gap={6} py={10}>
+        <GridItem colSpan={2}>
+          <AccountSidebar />
+        </GridItem>
 
-          <GridItem colSpan={10}>
-            <VStack align="start" spacing={10}>
-              <Text fontSize="xl" fontWeight="bold">
-                Notifications
-              </Text>
+        <GridItem colSpan={10} display="flex" flexDirection="column">
+          <VStack align="start" spacing={10}>
+            <Text fontSize="xl" fontWeight="bold">
+              Notifications
+            </Text>
 
-              {notifications.map((section, i) => (
-                <Box key={i} w="full">
-                  <Text fontWeight="semibold" mb={4}>
-                    {section.section}
-                  </Text>
-                  <VStack spacing={6} align="start">
-                    {section.items.map((item, idx) => (
-                      <Box key={idx} w="full">
-                        <HStack justify="space-between" align="start" w="full">
-                          <Box>
-                            <Text fontWeight="semibold">{item.title}</Text>
-                            <Text fontSize="sm" color="gray.600">
-                              {item.description}
-                            </Text>
-                          </Box>
-                          <HStack spacing={4}>
-                            <HStack>
-                              <Text fontSize="sm">Email</Text>
-                              <Switch size="sm" />
-                            </HStack>
-                            <HStack>
-                              <Text fontSize="sm">Push notifications</Text>
-                              <Switch size="sm" />
-                            </HStack>
+            {notifications.map((section, i) => (
+              <Box key={i} w="full">
+                <Text fontWeight="semibold" mb={4}>
+                  {section.section}
+                </Text>
+                <VStack spacing={6} align="start">
+                  {section.items.map((item, idx) => (
+                    <Box key={idx} w="full">
+                      <HStack justify="space-between" align="start" w="full">
+                        <Box>
+                          <Text fontWeight="semibold">{item.title}</Text>
+                          <Text fontSize="sm" color="gray.600">
+                            {item.description}
+                          </Text>
+                        </Box>
+                        <HStack spacing={4}>
+                          <HStack>
+                            <Text fontSize="sm">Email</Text>
+                            <Switch size="sm" />
+                          </HStack>
+                          <HStack>
+                            <Text fontSize="sm">Push notifications</Text>
+                            <Switch size="sm" />
                           </HStack>
                         </HStack>
-                        <Divider my={4} />
-                      </Box>
-                    ))}
-                  </VStack>
-                </Box>
-              ))}
+                      </HStack>
+                      <Divider my={4} />
+                    </Box>
+                  ))}
+                </VStack>
+              </Box>
+            ))}
 
-              <Text fontSize="xs" color="gray.500">
-                If you would like to unsubscribe from all communications,{" "}
-                <Link href="#" color="blue.500" textDecor="underline">
-                  click here
-                </Link>
-                .
-              </Text>
-            </VStack>
-          </GridItem>
-        </Grid>
-      </Container>
-      <Footer />
-    </>
+            <Text fontSize="xs" color="gray.500">
+              If you would like to unsubscribe from all communications,{" "}
+              <Link href="#" color="blue.500" textDecor="underline">
+                click here
+              </Link>
+              .
+            </Text>
+          </VStack>
+        </GridItem>
+      </Grid>
+    </Container>
   );
 }

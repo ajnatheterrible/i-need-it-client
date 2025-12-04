@@ -20,7 +20,6 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 
 import Container from "../../components/shared/Container";
-import Footer from "../../components/layout/Footer";
 import AccountSidebar from "../../components/sidebars/AccountSidebar";
 import useFetchSizes from "../../hooks/useFetchSizes";
 import useAuthStore from "../../store/authStore";
@@ -134,96 +133,94 @@ export default function Sizes() {
     ));
 
   return (
-    <>
-      <Container>
-        <Grid templateColumns="repeat(12, 1fr)" gap={8} py={10}>
-          <GridItem colSpan={2}>
-            <AccountSidebar />
-          </GridItem>
+    <Container>
+      <Grid templateColumns="repeat(12, 1fr)" gap={8} py={10}>
+        <GridItem colSpan={2}>
+          <AccountSidebar />
+        </GridItem>
 
-          <GridItem colSpan={8}>
-            {loading ? (
-              <Box
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                minH="60vh"
-                w="full"
-              >
-                <Spinner size="xl" thickness="4px" color="gray.300" />
-              </Box>
-            ) : (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.25 }}
-              >
-                <VStack align="start" spacing={8}>
-                  <Box>
-                    <Heading size="md" mb={1}>
-                      My sizes
-                    </Heading>
-                    <Text fontSize="sm" color="gray.600">
-                      Set up to filter out listings that are not in your size
-                    </Text>
-                  </Box>
+        <GridItem colSpan={8} display="flex" flexDirection="column">
+          {loading ? (
+            <Box
+              flex="1"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              w="full"
+            >
+              <Spinner size="xl" thickness="4px" color="gray.300" />
+            </Box>
+          ) : (
+            <motion.div
+              style={{ width: "100%" }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.25 }}
+            >
+              <VStack align="start" spacing={8}>
+                <Box>
+                  <Heading size="md" mb={1}>
+                    My sizes
+                  </Heading>
+                  <Text fontSize="sm" color="gray.600">
+                    Set up to filter out listings that are not in your size
+                  </Text>
+                </Box>
 
-                  <Tabs variant="unstyled">
-                    <TabList>
-                      <Tab
-                        _selected={{
-                          borderBottom: "2px solid black",
-                          fontWeight: "bold",
-                        }}
-                        pb={2}
-                        mr={4}
-                      >
-                        Menswear
-                      </Tab>
-                      <Tab
-                        _selected={{
-                          borderBottom: "2px solid black",
-                          fontWeight: "bold",
-                        }}
-                        pb={2}
-                      >
-                        Womenswear
-                      </Tab>
-                    </TabList>
+                <Tabs variant="unstyled">
+                  <TabList>
+                    <Tab
+                      _selected={{
+                        borderBottom: "2px solid black",
+                        fontWeight: "bold",
+                      }}
+                      pb={2}
+                      mr={4}
+                    >
+                      Menswear
+                    </Tab>
+                    <Tab
+                      _selected={{
+                        borderBottom: "2px solid black",
+                        fontWeight: "bold",
+                      }}
+                      pb={2}
+                    >
+                      Womenswear
+                    </Tab>
+                  </TabList>
 
-                    <TabPanels>
-                      <TabPanel px={0}>
-                        <VStack align="start" spacing={8}>
-                          {renderSizeGrid("menswear", menswearSizes)}
-                        </VStack>
-                      </TabPanel>
+                  <TabPanels>
+                    <TabPanel px={0}>
+                      <VStack align="start" spacing={8}>
+                        {renderSizeGrid("menswear", menswearSizes)}
+                      </VStack>
+                    </TabPanel>
 
-                      <TabPanel px={0}>
-                        <VStack align="start" spacing={8}>
-                          {renderSizeGrid("womenswear", womenswearSizes)}
-                        </VStack>
-                      </TabPanel>
-                    </TabPanels>
-                  </Tabs>
+                    <TabPanel px={0}>
+                      <VStack align="start" spacing={8}>
+                        {renderSizeGrid("womenswear", womenswearSizes)}
+                      </VStack>
+                    </TabPanel>
+                  </TabPanels>
+                </Tabs>
 
-                  <Button
-                    mt={4}
-                    w="full"
-                    colorScheme="blackAlpha"
-                    bg="black"
-                    color="white"
-                    onClick={handleSave}
-                    isLoading={hasSubmitted}
-                  >
-                    Save My Sizes
-                  </Button>
-                </VStack>
-              </motion.div>
-            )}
-          </GridItem>
-        </Grid>
-      </Container>
-      <Footer />
-    </>
+                <Button
+                  mt={4}
+                  w="full"
+                  colorScheme="blackAlpha"
+                  bg="black"
+                  color="white"
+                  onClick={handleSave}
+                  isLoading={hasSubmitted}
+                >
+                  Save My Sizes
+                </Button>
+              </VStack>
+            </motion.div>
+          )}
+        </GridItem>
+      </Grid>
+    </Container>
   );
 }

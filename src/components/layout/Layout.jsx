@@ -12,6 +12,7 @@ import AuthModal from "../modals/AuthModal";
 import ScrollToTop from "../shared/ScrollToTop";
 import OAuthErrorModal from "../modals/OAuthErrorModal";
 import BonusModal from "../modals/BonusModal";
+import Footer from "./Footer";
 
 export default function Layout() {
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
@@ -55,7 +56,7 @@ export default function Layout() {
 
   return (
     <AuthModalContext.Provider value={onOpenAuthModal}>
-      <Box minHeight="100vh">
+      <Box minH="100vh" display="flex" flexDirection="column">
         <ScrollToTop />
         {isLoggedIn ? <Navbar /> : <NavbarGuest />}
 
@@ -78,13 +79,15 @@ export default function Layout() {
           onRegisterSuccess={onOpenBonusModal}
         />
 
-        <Box pt="112px">
+        <Box pt="112px" flex="1">
           <Outlet
             context={{
               onOpenAuthModal,
             }}
           />
         </Box>
+
+        <Footer />
 
         <OAuthErrorModal
           isOpen={!!oauthError}
